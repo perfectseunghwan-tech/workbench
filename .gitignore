@@ -1,0 +1,10 @@
+node_modules/ 
+dist/ 
+target/ 
+build/ 
+.gradle/ 
+.mvn/ 
+.env*.local 
+.idea/ 
+.vscode/ 
+*.class 
