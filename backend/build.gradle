@@ -1,46 +1,66 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.1'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.2.4'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(25)
-	}
+    toolchain {
+        // 새로 설치하신 JDK 21을 정확히 타겟팅합니다.
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    // Spring AI 패키지 수집을 위한 필수 저장소
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 ext {
-	set('springAiVersion', "2.0.1")
+    set('springAiVersion', "1.0.0-M6")
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testCompileOnly 'org.projectlombok:lombok'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testAnnotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Spring AI 필수 스타터
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
+
+    // Lombok (JDK 21과 완벽 호환)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
-	}
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+// Java 컴파일 인코딩 설정
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+// bootRun 및 test 실행 시 JVM 인코딩 설정
+tasks.withType(JavaExec) {
+    jvmArgs ['-Dfile.encoding=UTF-8']
 }

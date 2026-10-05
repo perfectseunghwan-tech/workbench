@@ -1,0 +1,7 @@
+{
+  "name": "workbench",
+  "private": true,
+  "scripts": {
+    "local": "npm --prefix frontend run local"
+  }
+}
