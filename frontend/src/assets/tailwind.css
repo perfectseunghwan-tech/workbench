@@ -1,0 +1,591 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --app-primary-50: #eff6ff;
+    --app-primary-100: #dbeafe;
+    --app-primary-200: #bfdbfe;
+    --app-primary-500: #3b82f6;
+    --app-primary-600: #2563eb;
+    --app-primary-700: #1d4ed8;
+    --app-primary-800: #1e40af;
+    --app-canvas: #f6f8fc;
+    --app-surface: #ffffff;
+    --app-surface-muted: #f8fafc;
+    --app-border: #e2e8f0;
+    --app-border-strong: #cbd5e1;
+    --app-text: #1e293b;
+    --app-text-muted: #64748b;
+    --app-text-subtle: #94a3b8;
+    --app-danger: #dc2626;
+    --app-danger-soft: #fef2f2;
+    --app-success: #15803d;
+    --app-success-soft: #f0fdf4;
+    --app-warning: #b45309;
+    --app-warning-soft: #fffbeb;
+    --app-radius: 0.75rem;
+    --app-shadow: 0 8px 28px rgb(15 23 42 / 0.06);
+    --p-primary-color: var(--app-primary-600);
+    --p-primary-contrast-color: #ffffff;
+    --p-primary-hover-color: var(--app-primary-700);
+    --p-primary-active-color: var(--app-primary-800);
+    --p-primary-focus-ring-color: rgb(59 130 246 / 0.3);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: var(--app-text);
+    background: var(--app-canvas);
+    font-family:
+      "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--app-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+/* PrimeVue foundation */
+.p-button {
+  border-radius: 0.5rem;
+  font-weight: 700;
+}
+
+.p-inputtext,
+.p-select,
+.p-textarea {
+  border-color: var(--app-border-strong);
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+.p-inputtext:enabled:hover,
+.p-select:not(.p-disabled):hover,
+.p-textarea:enabled:hover {
+  border-color: var(--app-primary-500);
+}
+
+.p-inputtext:enabled:focus,
+.p-select.p-focus,
+.p-textarea:enabled:focus {
+  border-color: var(--app-primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12);
+}
+
+:where(.p-datatable) thead th {
+  color: var(--app-primary-800);
+  background: var(--app-primary-50);
+  text-align: center;
+}
+
+:where(.p-datatable) thead th .p-datatable-column-header-content {
+  width: 100%;
+  justify-content: center;
+}
+
+.aqms-detail-dialog {
+  display: flex;
+  max-height: 90vh;
+  flex-direction: column;
+}
+
+.aqms-detail-dialog .p-dialog-header {
+  flex-shrink: 0;
+}
+
+.aqms-detail-dialog .p-dialog-content {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* Application shell */
+.app-shell {
+  --sidebar-width: 232px;
+  --topbar-height: 64px;
+  color: var(--app-text) !important;
+  background: var(--app-canvas) !important;
+}
+
+.app-shell .sidebar {
+  background: #ffffff !important;
+  border-color: var(--app-border) !important;
+}
+
+.app-shell .sidebar-brand {
+  color: #0f172a !important;
+}
+
+.app-shell .brand-symbol {
+  color: #fff !important;
+  background: linear-gradient(145deg, var(--app-primary-500), var(--app-primary-700)) !important;
+  border-radius: 0.625rem !important;
+  box-shadow: 0 6px 16px rgb(37 99 235 / 0.22) !important;
+}
+
+.app-shell .brand-name {
+  color: #0f172a;
+}
+
+.app-shell .nav-group > p {
+  color: var(--app-text-subtle) !important;
+}
+
+.app-shell .nav-item {
+  color: var(--app-text-muted) !important;
+  border-radius: 0.5rem !important;
+}
+
+.app-shell .nav-item > i {
+  color: #94a3b8 !important;
+}
+
+.app-shell .nav-item:hover {
+  color: var(--app-primary-700) !important;
+  background: var(--app-primary-50) !important;
+}
+
+.app-shell .nav-item.router-link-exact-active {
+  color: var(--app-primary-800) !important;
+  background: var(--app-primary-100) !important;
+  font-weight: 750;
+}
+
+.app-shell .nav-item.router-link-exact-active::before {
+  background: var(--app-primary-600) !important;
+}
+
+.app-shell .nav-item.router-link-exact-active > i {
+  color: var(--app-primary-700) !important;
+}
+
+.app-shell .sidebar-footer {
+  color: #475569 !important;
+  background: var(--app-primary-50) !important;
+  border: 1px solid var(--app-primary-100);
+}
+
+.app-shell .footer-icon {
+  color: var(--app-primary-700) !important;
+  background: #fff !important;
+}
+
+.app-shell .sidebar-footer small {
+  color: var(--app-text-muted) !important;
+}
+
+.app-shell .app-topbar {
+  background: rgb(239 246 255 / 0.96) !important;
+  border-color: var(--app-primary-100) !important;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+}
+
+.app-shell :where(.menu-toggle, .topbar-tools button) {
+  color: var(--app-text-muted) !important;
+}
+
+.app-shell :where(.menu-toggle, .topbar-tools button):hover {
+  color: var(--app-primary-700) !important;
+  background: var(--app-primary-50) !important;
+}
+
+.app-shell .topbar-divider {
+  background: var(--app-border) !important;
+}
+
+.app-shell .topbar-title {
+  color: #334155 !important;
+  font-size: 14px !important;
+}
+
+.app-shell .profile-avatar {
+  color: var(--app-primary-800) !important;
+  background: var(--app-primary-100) !important;
+  border-color: #fff !important;
+}
+
+.app-shell .sidebar-backdrop {
+  background: rgb(15 23 42 / 0.48) !important;
+}
+
+/* Shared native-control theme used by the current screens. */
+:where(.trade-page, .settings-page) {
+  min-height: calc(100vh - 64px) !important;
+  color: var(--app-text) !important;
+  background: var(--app-canvas) !important;
+}
+
+:where(.trade-page, .settings-page) :where(.section-label, .page-heading > div > p) {
+  color: var(--app-primary-700) !important;
+}
+
+:where(.trade-page, .settings-page) :where(.hero h1, .page-heading h1, .trade-modal h2, .modal h2) {
+  color: #0f172a !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+}
+
+:where(.trade-page, .settings-page) :where(.filter-card, .table-card, .panel) {
+  border-color: var(--app-border) !important;
+  border-radius: var(--app-radius) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+.trade-page .page-shell,
+.settings-page .page-shell {
+  width: min(1320px, calc(100% - 48px));
+}
+
+.trade-page .hero > div > p:last-child,
+.settings-page .page-heading span,
+.trade-page .table-heading p {
+  color: var(--app-text-muted) !important;
+}
+
+.trade-page .summary-grid {
+  background: var(--app-border) !important;
+  border-color: var(--app-border) !important;
+  border-radius: var(--app-radius) !important;
+  box-shadow: var(--app-shadow);
+}
+
+.trade-page .summary-grid article {
+  background: var(--app-surface) !important;
+}
+
+.trade-page .summary-grid span,
+.trade-page .summary-grid small {
+  color: var(--app-text-muted) !important;
+}
+
+.trade-page .summary-grid strong {
+  color: #0f172a;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+}
+
+.trade-page .summary-grid .buy strong {
+  color: var(--app-primary-700) !important;
+}
+
+.trade-page .text-button {
+  color: var(--app-primary-700) !important;
+}
+
+.trade-page .table-wrap,
+.trade-page .pagination,
+.settings-page :where(.panel > header, .search-row, .pager) {
+  border-color: var(--app-border) !important;
+}
+
+:where(.trade-page, .settings-page) :where(input, select, textarea) {
+  color: var(--app-text) !important;
+  background: var(--app-surface) !important;
+  border-color: var(--app-border-strong) !important;
+  border-radius: 0.5rem !important;
+}
+
+:where(.trade-page, .settings-page) :where(input, select) {
+  height: 42px !important;
+}
+
+:where(.trade-page, .settings-page) :where(input, select, textarea):focus {
+  border-color: var(--app-primary-500) !important;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12) !important;
+}
+
+.trade-page :where(.primary-button, .search-button),
+.settings-page .primary {
+  min-height: 42px !important;
+  color: #fff !important;
+  background: var(--app-primary-600) !important;
+  border-radius: 0.5rem !important;
+}
+
+.trade-page :where(.primary-button, .search-button):hover,
+.settings-page .primary:hover {
+  background: var(--app-primary-700) !important;
+}
+
+.trade-page .secondary-button,
+.settings-page .secondary {
+  min-height: 42px !important;
+  color: #334155 !important;
+  background: #f1f5f9 !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 0.5rem !important;
+}
+
+.trade-page .row-actions button,
+.settings-page .row-actions button,
+.settings-page .modal header button {
+  color: #64748b !important;
+  background: #fff !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 0.5rem !important;
+}
+
+.trade-page .row-actions button:hover,
+.settings-page .row-actions button:hover,
+.settings-page .modal header button:hover {
+  color: var(--app-primary-700) !important;
+  background: var(--app-primary-50) !important;
+  border-color: var(--app-primary-200) !important;
+}
+
+:where(.trade-page, .settings-page) table th {
+  color: var(--app-primary-800) !important;
+  background: var(--app-primary-50) !important;
+  border-bottom: 1px solid var(--app-primary-100) !important;
+  text-align: center !important;
+}
+
+:where(.trade-page, .settings-page) table td {
+  border-color: #eef2f7 !important;
+}
+
+:where(.trade-page, .settings-page) tbody tr:hover {
+  background: #f8fbff !important;
+}
+
+:where(.trade-page, .settings-page) :where(.pagination, .pager) button {
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  border-radius: 0.5rem !important;
+}
+
+:where(.trade-page, .settings-page) :where(.modal-backdrop) {
+  background: rgb(15 23 42 / 0.56) !important;
+}
+
+:where(.trade-page, .settings-page) :where(.trade-modal, .modal) {
+  border: 1px solid var(--app-border);
+  border-radius: 1rem !important;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.22);
+}
+
+:where(.trade-page, .settings-page) :where(.trade-modal, .modal) > header {
+  border-color: var(--app-border) !important;
+}
+
+.trade-page .type-switch {
+  background: #f1f5f9 !important;
+}
+
+.trade-page .type-switch button.active {
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.08) !important;
+}
+
+.trade-page .amount-preview {
+  background: var(--app-primary-50) !important;
+  border: 1px solid var(--app-primary-100);
+}
+
+.trade-page .amount-preview strong {
+  color: var(--app-primary-800) !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+}
+
+:where(.trade-page, .settings-page) .toast {
+  color: #fff !important;
+  background: #1e3a8a !important;
+  box-shadow: 0 10px 30px rgb(30 64 175 / 0.22);
+}
+
+.trade-page .alert.error,
+.settings-page .alert {
+  color: #991b1b !important;
+  background: var(--app-danger-soft) !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 0.5rem !important;
+}
+
+:where(.trade-page, .settings-page) :where(.empty-state, .empty) {
+  color: var(--app-text-muted) !important;
+}
+
+.settings-page .brokerage-item.selected {
+  color: var(--app-primary-800) !important;
+  background: var(--app-primary-50) !important;
+  border-color: var(--app-primary-200) !important;
+}
+
+.settings-page .brokerage-item:hover {
+  background: #f8fbff !important;
+}
+
+.settings-page .account-panel > header p {
+  color: var(--app-primary-700) !important;
+}
+
+.settings-page .company-icon {
+  color: var(--app-primary-700) !important;
+  background: var(--app-primary-100) !important;
+}
+
+.settings-page .status {
+  color: var(--app-success) !important;
+  background: var(--app-success-soft) !important;
+}
+
+.settings-page .status.off {
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+}
+
+/* Connection status screen */
+.connection-page {
+  display: grid;
+  min-height: calc(100vh - 64px);
+  place-items: center;
+  padding: 32px;
+  background: var(--app-canvas);
+}
+
+.connection-card {
+  width: 100%;
+  max-width: 560px;
+  padding: 40px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+}
+
+.connection-card .eyebrow {
+  margin: 0 0 28px;
+  color: var(--app-primary-700);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.connection-card .status-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  color: var(--app-primary-700);
+  background: var(--app-primary-100);
+  border-radius: 50%;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.connection-card .status-icon.success {
+  color: var(--app-success);
+  background: var(--app-success-soft);
+}
+
+.connection-card .status-icon.error {
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
+}
+
+.connection-card h1 {
+  margin: 22px 0 10px;
+  color: #0f172a;
+  font-size: clamp(24px, 5vw, 32px);
+  letter-spacing: -0.03em;
+}
+
+.connection-card .description {
+  min-height: 50px;
+  color: var(--app-text-muted);
+  line-height: 1.7;
+}
+
+.connection-card dl {
+  margin: 26px 0;
+  padding: 18px;
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  font-size: 13px;
+}
+
+.connection-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.connection-card dt {
+  color: var(--app-text-muted);
+}
+
+.connection-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.connection-card > button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  color: #fff;
+  background: var(--app-primary-600);
+  border: 0;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.connection-card > button:hover {
+  background: var(--app-primary-700);
+}
+
+.connection-card > button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .connection-page {
+    padding: 16px;
+  }
+
+  .connection-card {
+    padding: 28px 22px;
+  }
+}
