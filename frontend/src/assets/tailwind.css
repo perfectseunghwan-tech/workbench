@@ -273,7 +273,47 @@
 
 .trade-page .page-shell,
 .settings-page .page-shell {
-  width: min(1320px, calc(100% - 48px));
+  width: calc(100% - 48px) !important;
+  max-width: none;
+  padding: 48px 0 80px !important;
+}
+
+/* Keep the primary management screens aligned with the account-management heading and full-width layout. */
+.journal-page {
+  width: calc(100% - 48px) !important;
+  max-width: none;
+  padding: 48px 0 80px !important;
+}
+
+:where(.trade-page, .settings-page, .journal-page)
+  :where(.hero h1, .page-heading h1, .page-shell > header h1, .journal-page-head h1) {
+  font-family: inherit !important;
+  font-size: clamp(30px, 3vw, 40px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em;
+}
+
+:where(.trade-page, .settings-page, .journal-page)
+  :where(.section-label, .page-heading > div > p, .page-shell > header p, .journal-page-head p) {
+  margin: 0 0 9px !important;
+  color: var(--app-primary-700) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.15em !important;
+}
+
+:where(.trade-page, .settings-page, .journal-page)
+  :where(.hero > div > p:last-child, .page-heading span, .page-shell > header span, .journal-page-head span) {
+  display: block;
+  margin-top: 10px !important;
+  color: var(--app-text-muted) !important;
+}
+
+.trade-page .hero,
+.settings-page .page-heading,
+.settings-page .page-shell > header,
+.journal-page .journal-page-head {
+  margin-bottom: 28px !important;
 }
 
 .trade-page .hero > div > p:last-child,
@@ -591,5 +631,19 @@
 
   .connection-card {
     padding: 28px 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .trade-page .page-shell,
+  .settings-page .page-shell,
+  .journal-page {
+    width: calc(100% - 28px) !important;
+    padding: 32px 0 48px !important;
+  }
+
+  .trade-page .page-shell,
+  .settings-page .page-shell {
+    padding: 32px 0 48px !important;
   }
 }
