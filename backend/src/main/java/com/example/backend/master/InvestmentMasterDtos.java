@@ -23,7 +23,6 @@ public final class InvestmentMasterDtos {
             Long brokerageId,
             String accountName,
             String accountNumber,
-            String accountMemo,
             Boolean useYn) {
     }
 
@@ -33,10 +32,17 @@ public final class InvestmentMasterDtos {
             String brokerageName,
             String accountName,
             String accountNumber,
-            String accountMemo,
+            String latestMemoContent,
+            LocalDateTime latestMemoCreatedAt,
             Boolean useYn,
             LocalDateTime createdAt,
             LocalDateTime updatedAt) {
+    }
+
+    public record AccountMemoRequest(String memoContent) {
+    }
+
+    public record AccountMemoResponse(Long memoId, Long accountId, String memoContent, LocalDateTime createdAt) {
     }
 
     public record UsageRequest(Boolean useYn) {

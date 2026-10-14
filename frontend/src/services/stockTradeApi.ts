@@ -96,8 +96,12 @@ export const stockTradeApi = {
     const query = brokerageId ? `?brokerageId=${brokerageId}` : ''
     return request<InvestmentAccount[]>(`/api/investment-accounts${query}`)
   },
-  getStocks() {
-    return request<Stock[]>('/api/stocks')
+  getStocks(keyword?: string, marketCode?: string) {
+    const params = new URLSearchParams()
+    if (keyword?.trim()) params.set('keyword', keyword.trim())
+    if (marketCode?.trim()) params.set('marketCode', marketCode.trim())
+    const query = params.toString()
+    return request<Stock[]>(`/api/stocks${query ? `?${query}` : ''}`)
   },
   createTrade(payload: TradePayload) {
     return request<StockTrade>('/api/stock-trades', {

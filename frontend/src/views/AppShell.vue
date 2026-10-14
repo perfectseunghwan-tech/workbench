@@ -14,6 +14,7 @@ const navigation = [
     items: [
       { label: '거래 내역', icon: 'pi pi-chart-line', to: '/' },
       { label: '증권사·계좌 관리', icon: 'pi pi-wallet', to: '/settings/accounts' },
+      { label: '주식종목 관리', icon: 'pi pi-chart-bar', to: '/settings/stocks' },
     ],
   },
   {

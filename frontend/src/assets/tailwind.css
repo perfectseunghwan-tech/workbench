@@ -255,7 +255,7 @@
   color: var(--app-primary-700) !important;
 }
 
-:where(.trade-page, .settings-page) :where(.hero h1, .page-heading h1, .trade-modal h2, .modal h2) {
+:where(.trade-page, .settings-page) :where(.hero h1, .page-heading h1, .trade-modal h2, .stock-picker-modal h2, .modal h2) {
   color: #0f172a !important;
   font-family: inherit !important;
   font-weight: 800 !important;

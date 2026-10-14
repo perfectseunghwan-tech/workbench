@@ -24,9 +24,17 @@ public class InvestmentMasterRepository {
             """;
     private static final String ACCOUNT_SELECT = """
             SELECT a.account_id, a.brokerage_id, b.brokerage_name, a.account_name,
-                   a.account_number, a.account_memo, a.use_yn, a.created_at, a.updated_at
+                   a.account_number, m.memo_content AS latest_memo_content,
+                   m.created_at AS latest_memo_created_at, a.use_yn, a.created_at, a.updated_at
               FROM investment_account a
               JOIN brokerage_company b ON b.brokerage_id = a.brokerage_id
+              LEFT JOIN LATERAL (
+                  SELECT memo_content, created_at
+                    FROM investment_account_memo
+                   WHERE account_id = a.account_id
+                   ORDER BY created_at DESC, memo_id DESC
+                   LIMIT 1
+              ) m ON TRUE
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -128,7 +136,7 @@ public class InvestmentMasterRepository {
                 ACCOUNT_SELECT + where
                         + " ORDER BY b.brokerage_name, a.account_name LIMIT :limit OFFSET :offset",
                 parameters,
-                accountMapper(true));
+                accountMapper());
         Long total = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM investment_account a JOIN brokerage_company b"
                         + " ON b.brokerage_id = a.brokerage_id" + where,
@@ -141,15 +149,15 @@ public class InvestmentMasterRepository {
         return jdbc.query(
                 ACCOUNT_SELECT + " WHERE a.account_id = :accountId",
                 Map.of("accountId", accountId),
-                accountMapper(false)).stream().findFirst();
+                accountMapper()).stream().findFirst();
     }
 
     public long insertAccount(AccountRequest request) {
         Long id = jdbc.queryForObject("""
                 INSERT INTO investment_account (
-                    brokerage_id, account_name, account_number, account_memo, use_yn
+                    brokerage_id, account_name, account_number, use_yn
                 ) VALUES (
-                    :brokerageId, :accountName, :accountNumber, :accountMemo, :useYn
+                    :brokerageId, :accountName, :accountNumber, :useYn
                 )
                 RETURNING account_id
                 """, accountParameters(request).addValue("accountId", null), Long.class);
@@ -163,7 +171,6 @@ public class InvestmentMasterRepository {
                    SET brokerage_id = :brokerageId,
                        account_name = :accountName,
                        account_number = :accountNumber,
-                       account_memo = :accountMemo,
                        use_yn = :useYn,
                        updated_at = CURRENT_TIMESTAMP
                  WHERE account_id = :accountId
@@ -176,6 +183,63 @@ public class InvestmentMasterRepository {
                    SET use_yn = :useYn, updated_at = CURRENT_TIMESTAMP
                  WHERE account_id = :accountId
                 """, Map.of("accountId", accountId, "useYn", useYn));
+    }
+
+    public int deleteAccountTrades(long accountId) {
+        return jdbc.update("DELETE FROM stock_trade WHERE account_id = :accountId", Map.of("accountId", accountId));
+    }
+
+    public int deleteAccount(long accountId) {
+        return jdbc.update("DELETE FROM investment_account WHERE account_id = :accountId", Map.of("accountId", accountId));
+    }
+
+    public List<AccountMemoResponse> findAccountMemos(long accountId) {
+        return jdbc.query("""
+                SELECT memo_id, account_id, memo_content, created_at
+                  FROM investment_account_memo
+                 WHERE account_id = :accountId
+                 ORDER BY created_at DESC, memo_id DESC
+                """, Map.of("accountId", accountId), accountMemoMapper());
+    }
+
+    public AccountMemoResponse insertAccountMemo(long accountId, String memoContent) {
+        return jdbc.queryForObject("""
+                INSERT INTO investment_account_memo (account_id, memo_content)
+                VALUES (:accountId, :memoContent)
+                RETURNING memo_id, account_id, memo_content, created_at
+                """, new MapSqlParameterSource()
+                .addValue("accountId", accountId)
+                .addValue("memoContent", memoContent), accountMemoMapper());
+    }
+
+    public int updateAccountMemo(long accountId, long memoId, String memoContent) {
+        return jdbc.update("""
+                UPDATE investment_account_memo
+                   SET memo_content = :memoContent
+                 WHERE account_id = :accountId AND memo_id = :memoId
+                """, new MapSqlParameterSource()
+                .addValue("accountId", accountId)
+                .addValue("memoId", memoId)
+                .addValue("memoContent", memoContent));
+    }
+
+    public Optional<AccountMemoResponse> findAccountMemo(long accountId, long memoId) {
+        return jdbc.query("""
+                SELECT memo_id, account_id, memo_content, created_at
+                  FROM investment_account_memo
+                 WHERE account_id = :accountId AND memo_id = :memoId
+                """, Map.of("accountId", accountId, "memoId", memoId), accountMemoMapper()).stream().findFirst();
+    }
+
+    public int deleteAccountMemo(long accountId, long memoId) {
+        return jdbc.update("""
+                DELETE FROM investment_account_memo
+                 WHERE account_id = :accountId AND memo_id = :memoId
+                """, Map.of("accountId", accountId, "memoId", memoId));
+    }
+
+    public int deleteAccountMemos(long accountId) {
+        return jdbc.update("DELETE FROM investment_account_memo WHERE account_id = :accountId", Map.of("accountId", accountId));
     }
 
     private String brokerageWhere(String keyword, Boolean useYn, Map<String, Object> parameters) {
@@ -214,7 +278,6 @@ public class InvestmentMasterRepository {
                 .addValue("brokerageId", request.brokerageId())
                 .addValue("accountName", request.accountName())
                 .addValue("accountNumber", request.accountNumber())
-                .addValue("accountMemo", request.accountMemo())
                 .addValue("useYn", request.useYn());
     }
 
@@ -228,7 +291,7 @@ public class InvestmentMasterRepository {
                 timestamp(rs, "updated_at"));
     }
 
-    private RowMapper<AccountResponse> accountMapper(boolean maskNumber) {
+    private RowMapper<AccountResponse> accountMapper() {
         return (rs, rowNum) -> {
             String accountNumber = rs.getString("account_number");
             return new AccountResponse(
@@ -236,19 +299,19 @@ public class InvestmentMasterRepository {
                     rs.getLong("brokerage_id"),
                     rs.getString("brokerage_name"),
                     rs.getString("account_name"),
-                    maskNumber ? maskAccountNumber(accountNumber) : accountNumber,
-                    rs.getString("account_memo"),
+                    accountNumber,
+                    rs.getString("latest_memo_content"),
+                    timestamp(rs, "latest_memo_created_at"),
                     rs.getBoolean("use_yn"),
                     timestamp(rs, "created_at"),
                     timestamp(rs, "updated_at"));
         };
     }
 
-    private String maskAccountNumber(String value) {
-        if (value == null || value.isBlank()) return value;
-        String compact = value.trim();
-        if (compact.length() <= 4) return "••••";
-        return "•••• " + compact.substring(compact.length() - 4);
+    private RowMapper<AccountMemoResponse> accountMemoMapper() {
+        return (rs, rowNum) -> new AccountMemoResponse(
+                rs.getLong("memo_id"), rs.getLong("account_id"),
+                rs.getString("memo_content"), timestamp(rs, "created_at"));
     }
 
     private LocalDateTime timestamp(ResultSet rs, String column) throws SQLException {

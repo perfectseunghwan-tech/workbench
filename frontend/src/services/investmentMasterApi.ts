@@ -21,7 +21,8 @@ export interface ManagedAccount {
   brokerageName: string
   accountName: string
   accountNumber: string | null
-  accountMemo: string | null
+  latestMemoContent: string | null
+  latestMemoCreatedAt: string | null
   useYn: boolean
   createdAt: string
   updatedAt: string
@@ -36,8 +37,18 @@ export interface AccountPayload {
   brokerageId: number
   accountName: string
   accountNumber: string | null
-  accountMemo: string | null
   useYn: boolean
+}
+
+export interface AccountMemo {
+  memoId: number
+  accountId: number
+  memoContent: string
+  createdAt: string
+}
+
+export interface AccountMemoPayload {
+  memoContent: string
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -55,6 +66,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     }
     throw new Error(message)
   }
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
 
@@ -93,9 +105,31 @@ export const investmentMasterApi = {
       method: 'PUT', body: JSON.stringify(payload),
     })
   },
+  deleteAccount(id: number) {
+    return request<void>(`/api/master/investment-accounts/${id}`, { method: 'DELETE' })
+  },
   updateAccountUsage(id: number, useYn: boolean) {
     return request<ManagedAccount>(`/api/master/investment-accounts/${id}/usage`, {
       method: 'PATCH', body: JSON.stringify({ useYn }),
+    })
+  },
+  getAccountMemos(accountId: number) {
+    return request<AccountMemo[]>(`/api/master/investment-accounts/${accountId}/memos`)
+  },
+  createAccountMemo(accountId: number, payload: AccountMemoPayload) {
+    return request<AccountMemo>(`/api/master/investment-accounts/${accountId}/memos`, {
+      method: 'POST', body: JSON.stringify(payload),
+    })
+  },
+  updateAccountMemo(accountId: number, memoId: number, payload: AccountMemoPayload) {
+    return request<AccountMemo>(`/api/master/investment-accounts/${accountId}/memos/${memoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+  deleteAccountMemo(accountId: number, memoId: number) {
+    return request<void>(`/api/master/investment-accounts/${accountId}/memos/${memoId}`, {
+      method: 'DELETE',
     })
   },
 }

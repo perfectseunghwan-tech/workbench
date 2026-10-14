@@ -68,6 +68,36 @@ public class InvestmentMasterService {
                 .orElseThrow(() -> notFound("증권계좌를 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<AccountMemoResponse> findAccountMemos(long accountId) {
+        findAccount(accountId);
+        return repository.findAccountMemos(accountId);
+    }
+
+    @Transactional
+    public AccountMemoResponse createAccountMemo(long accountId, AccountMemoRequest request) {
+        findAccount(accountId);
+        return repository.insertAccountMemo(accountId, normalizeMemo(request));
+    }
+
+    @Transactional
+    public AccountMemoResponse updateAccountMemo(long accountId, long memoId, AccountMemoRequest request) {
+        findAccount(accountId);
+        if (repository.updateAccountMemo(accountId, memoId, normalizeMemo(request)) == 0) {
+            throw notFound("메모를 찾을 수 없습니다.");
+        }
+        return repository.findAccountMemo(accountId, memoId)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "수정된 메모를 조회하지 못했습니다."));
+    }
+
+    @Transactional
+    public void deleteAccountMemo(long accountId, long memoId) {
+        findAccount(accountId);
+        if (repository.deleteAccountMemo(accountId, memoId) == 0) {
+            throw notFound("메모를 찾을 수 없습니다.");
+        }
+    }
+
     @Transactional
     public AccountResponse createAccount(AccountRequest request) {
         AccountRequest normalized = normalizeAccount(request);
@@ -84,6 +114,16 @@ public class InvestmentMasterService {
             throw notFound("증권계좌를 찾을 수 없습니다.");
         }
         return findSavedAccount(accountId);
+    }
+
+    @Transactional
+    public void deleteAccount(long accountId) {
+        findAccount(accountId);
+        repository.deleteAccountTrades(accountId);
+        repository.deleteAccountMemos(accountId);
+        if (repository.deleteAccount(accountId) == 0) {
+            throw notFound("증권계좌를 찾을 수 없습니다.");
+        }
     }
 
     @Transactional
@@ -122,8 +162,14 @@ public class InvestmentMasterService {
             throw badRequest("계좌번호는 100자 이하로 입력해 주세요.");
         }
         return new AccountRequest(
-                request.brokerageId(), name, number, clean(request.accountMemo()),
-                request.useYn() == null || request.useYn());
+                request.brokerageId(), name, number, request.useYn() == null || request.useYn());
+    }
+
+    private String normalizeMemo(AccountMemoRequest request) {
+        if (request == null || request.memoContent() == null || request.memoContent().isBlank()) {
+            throw badRequest("메모를 입력해 주세요.");
+        }
+        return request.memoContent().trim();
     }
 
     private void validateUniqueBrokerageName(String name, Long excludedId) {

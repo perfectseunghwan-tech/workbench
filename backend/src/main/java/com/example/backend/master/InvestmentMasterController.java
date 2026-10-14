@@ -4,6 +4,7 @@ import static com.example.backend.master.InvestmentMasterDtos.*;
 
 import java.net.URI;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,6 +71,26 @@ public class InvestmentMasterController {
         return service.findAccount(accountId);
     }
 
+    @GetMapping("/investment-accounts/{accountId}/memos")
+    public java.util.List<AccountMemoResponse> findAccountMemos(@PathVariable long accountId) {
+        return service.findAccountMemos(accountId);
+    }
+
+    @PostMapping("/investment-accounts/{accountId}/memos")
+    public ResponseEntity<AccountMemoResponse> createAccountMemo(
+            @PathVariable long accountId, @RequestBody AccountMemoRequest request) {
+        AccountMemoResponse created = service.createAccountMemo(accountId, request);
+        return ResponseEntity.created(URI.create(
+                "/api/master/investment-accounts/" + accountId + "/memos/" + created.memoId())).body(created);
+    }
+
+    @DeleteMapping("/investment-accounts/{accountId}/memos/{memoId}")
+    public ResponseEntity<Void> deleteAccountMemo(
+            @PathVariable long accountId, @PathVariable long memoId) {
+        service.deleteAccountMemo(accountId, memoId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/investment-accounts")
     public ResponseEntity<AccountResponse> createAccount(@RequestBody AccountRequest request) {
         AccountResponse created = service.createAccount(request);
@@ -80,6 +101,12 @@ public class InvestmentMasterController {
     public AccountResponse updateAccount(
             @PathVariable long accountId, @RequestBody AccountRequest request) {
         return service.updateAccount(accountId, request);
+    }
+
+    @DeleteMapping("/investment-accounts/{accountId}")
+    public ResponseEntity<Void> deleteAccount(@PathVariable long accountId) {
+        service.deleteAccount(accountId);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/investment-accounts/{accountId}/usage")

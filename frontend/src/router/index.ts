@@ -21,6 +21,12 @@ const router = createRouter({
           meta: { title: '증권사·계좌 관리' },
         },
         {
+          path: 'settings/stocks',
+          name: 'stock-settings',
+          component: () => import('../views/StockSettingsView.vue'),
+          meta: { title: '주식종목 관리' },
+        },
+        {
           path: 'connection',
           name: 'connection',
           component: () => import('../views/HomeView.vue'),
