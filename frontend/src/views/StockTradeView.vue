@@ -98,6 +98,9 @@ const currentSellAmount = computed(() =>
     .filter((item) => item.tradeType === 'SELL')
     .reduce((sum, item) => sum + Number(item.executionAmount), 0),
 )
+const currentRealizedProfitLoss = computed(() =>
+  trades.value.reduce((sum, item) => sum + Number(item.realizedProfitLoss ?? 0), 0),
+)
 
 function formatNumber(value: number | string | null, digits = 2) {
   if (value === null || value === '') return '—'

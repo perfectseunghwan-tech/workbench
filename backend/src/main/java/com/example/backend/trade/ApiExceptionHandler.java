@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -24,6 +25,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation() {
         return error(HttpStatus.CONFLICT, "다른 데이터에서 사용 중이거나 DB 제약조건에 맞지 않습니다.");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSize() {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "첨부파일 전체 크기가 허용 범위를 초과했습니다.");
     }
 
     private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {

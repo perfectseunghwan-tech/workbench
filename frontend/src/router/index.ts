@@ -15,6 +15,30 @@ const router = createRouter({
           meta: { title: '거래 내역' },
         },
         {
+          path: 'journals',
+          name: 'investment-journal-list',
+          component: () => import('../views/InvestmentJournalListView.vue'),
+          meta: { title: '투자일지' },
+        },
+        {
+          path: 'journals/new',
+          name: 'investment-journal-create',
+          component: () => import('../views/InvestmentJournalEditView.vue'),
+          meta: { title: '투자일지 작성' },
+        },
+        {
+          path: 'journals/:journalId',
+          name: 'investment-journal-detail',
+          component: () => import('../views/InvestmentJournalDetailView.vue'),
+          meta: { title: '투자일지 상세' },
+        },
+        {
+          path: 'journals/:journalId/edit',
+          name: 'investment-journal-edit',
+          component: () => import('../views/InvestmentJournalEditView.vue'),
+          meta: { title: '투자일지 수정' },
+        },
+        {
           path: 'settings/accounts',
           name: 'account-settings',
           component: () => import('../views/AccountSettingsView.vue'),
