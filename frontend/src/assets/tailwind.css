@@ -255,6 +255,11 @@
   background: var(--app-canvas) !important;
 }
 
+/* Stock settings previously added its own outer padding, duplicating the shared page-shell offset. */
+.settings-page {
+  padding: 0 !important;
+}
+
 :where(.trade-page, .settings-page) :where(.section-label, .page-heading > div > p) {
   color: var(--app-primary-700) !important;
 }
@@ -288,7 +293,7 @@
 :where(.trade-page, .settings-page, .journal-page)
   :where(.hero h1, .page-heading h1, .page-shell > header h1, .journal-page-head h1) {
   font-family: inherit !important;
-  font-size: clamp(30px, 3vw, 40px) !important;
+  font-size: clamp(24px, 2.4vw, 32px) !important;
   font-weight: 800 !important;
   letter-spacing: -0.04em;
 }
@@ -320,6 +325,13 @@
 .settings-page .page-heading span,
 .trade-page .table-heading p {
   color: var(--app-text-muted) !important;
+}
+
+/* The brokerage and account panels must begin their search areas on the same line. */
+.settings-page .master-grid > .panel > header {
+  height: 88px !important;
+  min-height: 88px !important;
+  box-sizing: border-box;
 }
 
 .trade-page .summary-grid {

@@ -101,6 +101,25 @@ public class InvestmentJournalRepository {
     }
     public int delete(long id) { return jdbc.update("DELETE FROM investment_journal WHERE journal_id=:id", Map.of("id", id)); }
 
+    public boolean strategiesExist(List<Long> ids) {
+        if (ids.isEmpty()) return true;
+        Long count = jdbc.queryForObject("SELECT COUNT(*) FROM investment_strategy WHERE use_yn=TRUE AND strategy_id IN (:ids)", Map.of("ids", ids), Long.class);
+        return count != null && count == new HashSet<>(ids).size();
+    }
+
+    public void replaceStrategies(long journalId, List<Long> ids) {
+        jdbc.update("DELETE FROM investment_strategy_journal WHERE journal_id=:id", Map.of("id", journalId));
+        for (Long strategyId : ids) jdbc.update("INSERT INTO investment_strategy_journal(strategy_id,journal_id) VALUES(:strategyId,:journalId)", Map.of("strategyId", strategyId, "journalId", journalId));
+    }
+
+    public List<JournalStrategyResponse> findStrategies(long journalId) {
+        return jdbc.query("""
+                SELECT s.strategy_id,s.title,s.status FROM investment_strategy_journal x
+                JOIN investment_strategy s ON s.strategy_id=x.strategy_id
+                WHERE x.journal_id=:id AND s.use_yn=TRUE ORDER BY s.title
+                """, Map.of("id", journalId), (rs,n)->new JournalStrategyResponse(rs.getLong(1),rs.getString(2),rs.getString(3)));
+    }
+
     private MapSqlParameterSource journalParams(JournalSaveRequest r, JsonNode content) {
         try { return new MapSqlParameterSource().addValue("date", r.journalDate()).addValue("title", r.journalTitle()).addValue("content", mapper.writeValueAsString(content)); }
         catch (JsonProcessingException e) { throw new IllegalArgumentException("본문을 직렬화할 수 없습니다.", e); }

@@ -48,6 +48,7 @@ public class InvestmentJournalService {
     public JournalDetailResponse create(JournalSaveRequest raw,List<MultipartFile> files) {
         JournalSaveRequest request=validate(raw,files,true, List.of());
         long journalId=repository.insert(request, emptyDoc());
+        repository.replaceStrategies(journalId, request.relatedStrategyIds());
         List<FileRow> created=new ArrayList<>();
         List<StoredFile> staged=new ArrayList<>();
         deleteAfterRollback(created,staged);
@@ -75,6 +76,7 @@ public class InvestmentJournalService {
             Map<String,Long> uploaded=storeFiles(id,request,files,created,staged);
             JsonNode normalized=normalizeContent(request.journalContent(),uploaded,retainedImages,imageUploadKeys(request));
             repository.update(id,request,normalized);
+            repository.replaceStrategies(id, request.relatedStrategyIds());
             repository.updateFileOrder(id,request.retainedFileIds());
             repository.deleteFiles(id,retainedWithCreated(retained,created));
             staged.forEach(storage::promote);
@@ -108,7 +110,9 @@ public class InvestmentJournalService {
         if(retained.size()+manifests.size()>maxFiles) throw bad("일지당 첨부파일은 "+maxFiles+"개까지 가능합니다.");
         long total=actual.stream().mapToLong(MultipartFile::getSize).sum(); if(total>maxRequestSize) throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE,"첨부파일 전체 크기가 허용 범위를 초과했습니다.");
         Set<String> keys=new HashSet<>(); for(NewFileManifest m:manifests) { if(m==null||m.uploadKey()==null||m.uploadKey().isBlank()||!keys.add(m.uploadKey())) throw bad("신규 파일 식별자가 올바르지 않습니다."); }
-        return new JournalSaveRequest(r.journalDate(),title,format,r.journalContent(),List.copyOf(retained),List.copyOf(manifests));
+        List<Long> strategies=r.relatedStrategyIds()==null?List.of():r.relatedStrategyIds().stream().filter(Objects::nonNull).distinct().toList();
+        if(!repository.strategiesExist(strategies)) throw bad("연결할 수 없는 투자전략이 포함되어 있습니다.");
+        return new JournalSaveRequest(r.journalDate(),title,format,r.journalContent(),List.copyOf(retained),List.copyOf(manifests),strategies);
     }
 
     private Map<String,Long> storeFiles(long journalId,JournalSaveRequest request,List<MultipartFile> files,List<FileRow> created,List<StoredFile> staged) {
@@ -145,7 +149,7 @@ public class InvestmentJournalService {
     private void walk(JsonNode node,Consumer<JsonNode> action) { action.accept(node); JsonNode children=node.get("content"); if(children!=null&&children.isArray()) children.forEach(child->walk(child,action)); }
     private Set<Long> retainedWithCreated(Set<Long> retained,List<FileRow> created) { Set<Long> result=new HashSet<>(retained); created.forEach(f->result.add(f.fileId())); return result; }
     private JournalRow row(long id) { return repository.findById(id).orElseThrow(this::notFound); }
-    private JournalDetailResponse detail(JournalRow r) { List<JournalFileResponse> files=repository.findFiles(r.journalId()).stream().map(f->new JournalFileResponse(f.fileId(),f.fileType(),f.originalFileName(),f.mimeType(),f.fileSize(),f.sortOrder(),f.createdAt(),"/api/investment-journals/"+r.journalId()+"/files/"+f.fileId())).toList(); return new JournalDetailResponse(r.journalId(),r.journalDate(),r.journalTitle(),files.size(),r.createdAt(),r.updatedAt(),r.contentFormat(),r.journalContent(),files); }
+    private JournalDetailResponse detail(JournalRow r) { List<JournalFileResponse> files=repository.findFiles(r.journalId()).stream().map(f->new JournalFileResponse(f.fileId(),f.fileType(),f.originalFileName(),f.mimeType(),f.fileSize(),f.sortOrder(),f.createdAt(),"/api/investment-journals/"+r.journalId()+"/files/"+f.fileId())).toList(); return new JournalDetailResponse(r.journalId(),r.journalDate(),r.journalTitle(),files.size(),r.createdAt(),r.updatedAt(),r.contentFormat(),r.journalContent(),files,repository.findStrategies(r.journalId())); }
     private JsonNode emptyDoc() { ObjectNode d=mapper.createObjectNode(); d.put("type","doc"); d.putArray("content"); return d; }
     private void afterCommit(Runnable r) { TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){@Override public void afterCommit(){r.run();}}); }
     private void deleteAfterRollback(List<FileRow> files,List<StoredFile> staged) { TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization(){@Override public void afterCompletion(int status){if(status!=STATUS_COMMITTED){storage.deleteAll(files);storage.deleteStored(staged);}}}); }

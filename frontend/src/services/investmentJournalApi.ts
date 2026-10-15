@@ -1,9 +1,10 @@
 export interface JournalContent { type: 'doc'; content?: Record<string, unknown>[] }
 export interface NewFileManifest { uploadKey: string; fileType: 'IMAGE' | 'FILE'; originalFileName: string; sortOrder: number }
-export interface JournalPayload { journalDate: string; journalTitle: string | null; contentFormat: 'JSON'; journalContent: JournalContent; retainedFileIds: number[]; newFiles: NewFileManifest[] }
+export interface JournalPayload { journalDate: string; journalTitle: string | null; contentFormat: 'JSON'; journalContent: JournalContent; retainedFileIds: number[]; newFiles: NewFileManifest[]; relatedStrategyIds: number[] }
 export interface JournalSummary { journalId:number; journalDate:string; journalTitle:string|null; fileCount:number; createdAt:string; updatedAt:string }
 export interface JournalFile { fileId:number; fileType:'IMAGE'|'FILE'; originalFileName:string; mimeType:string|null; fileSize:number|null; sortOrder:number; createdAt:string; contentUrl:string }
-export interface JournalDetail extends JournalSummary { contentFormat:string; journalContent:JournalContent; files:JournalFile[] }
+export interface JournalStrategy { strategyId:number; title:string; status:string }
+export interface JournalDetail extends JournalSummary { contentFormat:string; journalContent:JournalContent; files:JournalFile[]; relatedStrategies:JournalStrategy[] }
 export interface JournalPage { content:JournalSummary[]; totalElements:number; totalPages:number; page:number; size:number }
 
 async function request<T>(url:string,options?:RequestInit):Promise<T>{

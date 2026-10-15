@@ -15,6 +15,30 @@ const router = createRouter({
           meta: { title: '거래 내역' },
         },
         {
+          path: 'strategies',
+          name: 'investment-strategy-list',
+          component: () => import('../views/InvestmentStrategyListView.vue'),
+          meta: { title: '투자전략 관리' },
+        },
+        {
+          path: 'strategies/new',
+          name: 'investment-strategy-create',
+          component: () => import('../views/InvestmentStrategyEditView.vue'),
+          meta: { title: '투자전략 등록' },
+        },
+        {
+          path: 'strategies/:strategyId',
+          name: 'investment-strategy-detail',
+          component: () => import('../views/InvestmentStrategyDetailView.vue'),
+          meta: { title: '투자전략 상세' },
+        },
+        {
+          path: 'strategies/:strategyId/edit',
+          name: 'investment-strategy-edit',
+          component: () => import('../views/InvestmentStrategyEditView.vue'),
+          meta: { title: '투자전략 수정' },
+        },
+        {
           path: 'journals',
           name: 'investment-journal-list',
           component: () => import('../views/InvestmentJournalListView.vue'),

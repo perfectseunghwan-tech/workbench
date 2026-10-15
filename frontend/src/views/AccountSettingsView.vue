@@ -518,7 +518,6 @@ onMounted(() => loadBrokerages(false))
             <div>
               <p>{{ selectedBrokerage?.brokerageName || '증권사 선택' }}</p>
               <h2>투자 계좌</h2>
-              <span>{{ accountTotal }}개의 계좌</span>
             </div>
             <button
               class="primary"
