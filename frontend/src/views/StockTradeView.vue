@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { computed, onMounted, ref } from "vue";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
 import {
   stockTradeApi,
   type Brokerage,
@@ -9,127 +9,135 @@ import {
   type Stock,
   type StockTrade,
   type TradePayload,
-} from '@/services/stockTradeApi'
+} from "@/services/stockTradeApi";
 
 interface TradeForm {
-  brokerageId: number | ''
-  accountId: number | ''
-  stockId: number | ''
-  tradeDate: string
-  tradeType: 'BUY' | 'SELL'
-  executionQuantity: string
-  executionPrice: string
-  purchasePrice: string
-  realizedProfitLoss: string
-  tradeMemo: string
+  brokerageId: number | "";
+  accountId: number | "";
+  stockId: number | "";
+  tradeDate: string;
+  tradeType: "BUY" | "SELL";
+  executionQuantity: string;
+  executionPrice: string;
+  purchasePrice: string;
+  realizedProfitLoss: string;
+  tradeMemo: string;
 }
 
-type SummaryPeriod = 'today' | 'month' | 'year'
+type SummaryPeriod = "today" | "month" | "year";
 
 const formatDate = (date: Date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
-const today = () => formatDate(new Date())
+const today = () => formatDate(new Date());
 const emptyForm = (): TradeForm => ({
-  brokerageId: '',
-  accountId: '',
-  stockId: '',
+  brokerageId: "",
+  accountId: "",
+  stockId: "",
   tradeDate: today(),
-  tradeType: 'BUY',
-  executionQuantity: '',
-  executionPrice: '',
-  purchasePrice: '',
-  realizedProfitLoss: '',
-  tradeMemo: '',
-})
+  tradeType: "BUY",
+  executionQuantity: "",
+  executionPrice: "",
+  purchasePrice: "",
+  realizedProfitLoss: "",
+  tradeMemo: "",
+});
 
-const trades = ref<StockTrade[]>([])
-const brokerages = ref<Brokerage[]>([])
-const accounts = ref<InvestmentAccount[]>([])
-const formAccounts = ref<InvestmentAccount[]>([])
-const stocks = ref<Stock[]>([])
-const loading = ref(false)
-const saving = ref(false)
-const errorMessage = ref('')
-const noticeMessage = ref('')
-const showForm = ref(false)
-const editingId = ref<number | null>(null)
-const detailTrade = ref<StockTrade | null>(null)
-const selectedStock = ref<Stock | null>(null)
-const showStockPicker = ref(false)
-const stockPickerLoading = ref(false)
-const stockPickerError = ref('')
-const stockPickerResults = ref<Stock[]>([])
-const stockPickerFilters = ref({ keyword: '', marketCode: '' })
-const page = ref(0)
-const pageSize = 20
-const totalElements = ref(0)
-const selectedSummaryPeriod = ref<SummaryPeriod | null>(null)
+const trades = ref<StockTrade[]>([]);
+const brokerages = ref<Brokerage[]>([]);
+const accounts = ref<InvestmentAccount[]>([]);
+const formAccounts = ref<InvestmentAccount[]>([]);
+const stocks = ref<Stock[]>([]);
+const loading = ref(false);
+const saving = ref(false);
+const errorMessage = ref("");
+const noticeMessage = ref("");
+const showForm = ref(false);
+const editingId = ref<number | null>(null);
+const detailTrade = ref<StockTrade | null>(null);
+const selectedStock = ref<Stock | null>(null);
+const showStockPicker = ref(false);
+const stockPickerLoading = ref(false);
+const stockPickerError = ref("");
+const stockPickerResults = ref<Stock[]>([]);
+const stockPickerFilters = ref({ keyword: "", marketCode: "" });
+const page = ref(0);
+const pageSize = 20;
+const totalElements = ref(0);
+const selectedSummaryPeriod = ref<SummaryPeriod | null>(null);
 const filters = ref({
-  dateFrom: '',
-  dateTo: '',
-  brokerageId: '' as number | '',
-  accountId: '' as number | '',
-  marketCode: '',
-  keyword: '',
-  tradeType: '' as '' | 'BUY' | 'SELL',
-})
-const form = ref<TradeForm>(emptyForm())
+  dateFrom: "",
+  dateTo: "",
+  brokerageId: "" as number | "",
+  accountId: "" as number | "",
+  marketCode: "",
+  keyword: "",
+  tradeType: "" as "" | "BUY" | "SELL",
+});
+const form = ref<TradeForm>(emptyForm());
 
 const markets = computed(
   () =>
-    [...new Set(stocks.value.map((item) => item.marketCode).filter(Boolean))].sort() as string[],
-)
+    [
+      ...new Set(stocks.value.map((item) => item.marketCode).filter(Boolean)),
+    ].sort() as string[],
+);
 const executionAmount = computed(() => {
-  const amount = Number(form.value.executionQuantity) * Number(form.value.executionPrice)
-  return Number.isFinite(amount) ? amount : 0
-})
+  const amount =
+    Number(form.value.executionQuantity) * Number(form.value.executionPrice);
+  return Number.isFinite(amount) ? amount : 0;
+});
 const currentBuyAmount = computed(() =>
   trades.value
-    .filter((item) => item.tradeType === 'BUY')
+    .filter((item) => item.tradeType === "BUY")
     .reduce((sum, item) => sum + Number(item.executionAmount), 0),
-)
+);
 const currentSellAmount = computed(() =>
   trades.value
-    .filter((item) => item.tradeType === 'SELL')
+    .filter((item) => item.tradeType === "SELL")
     .reduce((sum, item) => sum + Number(item.executionAmount), 0),
-)
+);
 const currentRealizedProfitLoss = computed(() =>
-  trades.value.reduce((sum, item) => sum + Number(item.realizedProfitLoss ?? 0), 0),
-)
+  trades.value.reduce(
+    (sum, item) => sum + Number(item.realizedProfitLoss ?? 0),
+    0,
+  ),
+);
 
 function formatNumber(value: number | string | null, digits = 2) {
-  if (value === null || value === '') return '—'
-  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: digits }).format(Number(value))
+  if (value === null || value === "") return "—";
+  return new Intl.NumberFormat("ko-KR", {
+    maximumFractionDigits: digits,
+  }).format(Number(value));
 }
 
-function displayCurrency(value: number | string | null, currency = 'KRW') {
-  return value === null ? '—' : `${formatNumber(value)} ${currency}`
+function displayCurrency(value: number | string | null, currency = "KRW") {
+  return value === null ? "—" : `${formatNumber(value)} ${currency}`;
 }
 
 function getSummaryPeriodDates(period: SummaryPeriod) {
-  const now = new Date()
-  const start = new Date(now)
-  if (period === 'today') {
-    return { dateFrom: formatDate(now), dateTo: formatDate(now) }
+  const now = new Date();
+  const start = new Date(now);
+  if (period === "today") {
+    return { dateFrom: formatDate(now), dateTo: formatDate(now) };
   }
-  if (period === 'month') {
-    start.setDate(1)
+  if (period === "month") {
+    start.setDate(1);
   } else {
-    start.setMonth(0, 1)
+    start.setMonth(0, 1);
   }
-  return { dateFrom: formatDate(start), dateTo: formatDate(now) }
+  return { dateFrom: formatDate(start), dateTo: formatDate(now) };
 }
 
 function setNotice(message: string) {
-  noticeMessage.value = message
+  noticeMessage.value = message;
   window.setTimeout(() => {
-    if (noticeMessage.value === message) noticeMessage.value = ''
-  }, 3000)
+    if (noticeMessage.value === message) noticeMessage.value = "";
+  }, 3000);
 }
 
 async function loadReferenceData() {
@@ -137,81 +145,91 @@ async function loadReferenceData() {
     stockTradeApi.getBrokerages(),
     stockTradeApi.getAccounts(),
     stockTradeApi.getStocks(),
-  ])
-  brokerages.value = brokerageData
-  accounts.value = accountData
-  formAccounts.value = accountData
-  stocks.value = stockData
+  ]);
+  brokerages.value = brokerageData;
+  accounts.value = accountData;
+  formAccounts.value = accountData;
+  stocks.value = stockData;
 }
 
 async function loadTrades() {
-  loading.value = true
-  errorMessage.value = ''
+  loading.value = true;
+  errorMessage.value = "";
   try {
-    const params = new URLSearchParams({ page: String(page.value), size: String(pageSize) })
+    const params = new URLSearchParams({
+      page: String(page.value),
+      size: String(pageSize),
+    });
     Object.entries(filters.value).forEach(([key, value]) => {
-      if (value !== '') params.set(key, String(value))
-    })
-    const result = await stockTradeApi.getTrades(params)
-    trades.value = result.content
-    totalElements.value = result.totalElements
+      if (value !== "") params.set(key, String(value));
+    });
+    const result = await stockTradeApi.getTrades(params);
+    trades.value = result.content;
+    totalElements.value = result.totalElements;
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '거래 내역을 불러오지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : "거래 내역을 불러오지 못했습니다.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function search() {
-  page.value = 0
-  await loadTrades()
+  page.value = 0;
+  await loadTrades();
 }
 
 async function selectSummaryPeriod(period: SummaryPeriod) {
-  selectedSummaryPeriod.value = period
-  const dates = getSummaryPeriodDates(period)
-  filters.value.dateFrom = dates.dateFrom
-  filters.value.dateTo = dates.dateTo
-  await search()
+  selectedSummaryPeriod.value = period;
+  const dates = getSummaryPeriodDates(period);
+  filters.value.dateFrom = dates.dateFrom;
+  filters.value.dateTo = dates.dateTo;
+  await search();
 }
 
 async function resetFilters() {
-  selectedSummaryPeriod.value = null
+  selectedSummaryPeriod.value = null;
   filters.value = {
-    dateFrom: '',
-    dateTo: '',
-    brokerageId: '',
-    accountId: '',
-    marketCode: '',
-    keyword: '',
-    tradeType: '',
-  }
-  accounts.value = await stockTradeApi.getAccounts()
-  await search()
+    dateFrom: "",
+    dateTo: "",
+    brokerageId: "",
+    accountId: "",
+    marketCode: "",
+    keyword: "",
+    tradeType: "",
+  };
+  accounts.value = await stockTradeApi.getAccounts();
+  await search();
 }
 
 async function onFilterBrokerageChange() {
-  filters.value.accountId = ''
-  accounts.value = await stockTradeApi.getAccounts(filters.value.brokerageId || undefined)
+  filters.value.accountId = "";
+  accounts.value = await stockTradeApi.getAccounts(
+    filters.value.brokerageId || undefined,
+  );
 }
 
 async function onFormBrokerageChange() {
-  form.value.accountId = ''
-  formAccounts.value = await stockTradeApi.getAccounts(form.value.brokerageId || undefined)
+  form.value.accountId = "";
+  formAccounts.value = await stockTradeApi.getAccounts(
+    form.value.brokerageId || undefined,
+  );
 }
 
-function openCreateForm(type: 'BUY' | 'SELL' = 'BUY') {
-  editingId.value = null
-  form.value = { ...emptyForm(), tradeType: type }
-  selectedStock.value = null
-  formAccounts.value = [...accounts.value]
-  errorMessage.value = ''
-  showForm.value = true
+function openCreateForm(type: "BUY" | "SELL" = "BUY") {
+  editingId.value = null;
+  form.value = { ...emptyForm(), tradeType: type };
+  selectedStock.value = null;
+  formAccounts.value = [...accounts.value];
+  errorMessage.value = "";
+  showForm.value = true;
 }
 
 async function openEditForm(trade: StockTrade) {
-  editingId.value = trade.tradeId
-  formAccounts.value = await stockTradeApi.getAccounts(trade.brokerageId)
+  editingId.value = trade.tradeId;
+  formAccounts.value = await stockTradeApi.getAccounts(trade.brokerageId);
   form.value = {
     brokerageId: trade.brokerageId,
     accountId: trade.accountId,
@@ -220,63 +238,72 @@ async function openEditForm(trade: StockTrade) {
     tradeType: trade.tradeType,
     executionQuantity: String(trade.executionQuantity),
     executionPrice: String(trade.executionPrice),
-    purchasePrice: trade.purchasePrice === null ? '' : String(trade.purchasePrice),
-    realizedProfitLoss: trade.realizedProfitLoss === null ? '' : String(trade.realizedProfitLoss),
-    tradeMemo: trade.tradeMemo ?? '',
-  }
+    purchasePrice:
+      trade.purchasePrice === null ? "" : String(trade.purchasePrice),
+    realizedProfitLoss:
+      trade.realizedProfitLoss === null ? "" : String(trade.realizedProfitLoss),
+    tradeMemo: trade.tradeMemo ?? "",
+  };
   selectedStock.value = {
     stockId: trade.stockId,
     stockCode: trade.stockCode,
     stockName: trade.stockName,
     marketCode: trade.marketCode,
     currencyCode: trade.currencyCode,
-  }
-  errorMessage.value = ''
-  showForm.value = true
+  };
+  errorMessage.value = "";
+  showForm.value = true;
 }
 
 function closeForm() {
-  if (!saving.value) showForm.value = false
+  if (!saving.value) showForm.value = false;
 }
 function openDetail(trade: StockTrade) {
-  detailTrade.value = trade
+  detailTrade.value = trade;
 }
 
 async function loadStockPicker() {
-  stockPickerLoading.value = true
-  stockPickerError.value = ''
+  stockPickerLoading.value = true;
+  stockPickerError.value = "";
   try {
     stockPickerResults.value = await stockTradeApi.getStocks(
       stockPickerFilters.value.keyword,
       stockPickerFilters.value.marketCode,
-    )
+    );
   } catch (error) {
-    stockPickerError.value = error instanceof Error ? error.message : '종목을 조회하지 못했습니다.'
+    stockPickerError.value =
+      error instanceof Error ? error.message : "종목을 조회하지 못했습니다.";
   } finally {
-    stockPickerLoading.value = false
+    stockPickerLoading.value = false;
   }
 }
 async function openStockPicker() {
-  showStockPicker.value = true
-  await loadStockPicker()
+  showStockPicker.value = true;
+  await loadStockPicker();
 }
 function selectStock(stock: Stock) {
-  form.value.stockId = stock.stockId
-  selectedStock.value = stock
-  showStockPicker.value = false
+  form.value.stockId = stock.stockId;
+  selectedStock.value = stock;
+  showStockPicker.value = false;
 }
 
 function buildPayload(): TradePayload {
-  if (!form.value.stockId) throw new Error('종목을 선택해 주세요.')
+  if (!form.value.stockId) throw new Error("종목을 선택해 주세요.");
   if (!form.value.accountId || !form.value.tradeDate)
-    throw new Error('계좌와 거래일을 모두 입력해 주세요.')
-  if (!form.value.executionQuantity || Number(form.value.executionQuantity) <= 0) {
-    throw new Error('체결수량은 0보다 커야 합니다.')
+    throw new Error("계좌와 거래일을 모두 입력해 주세요.");
+  if (
+    !form.value.executionQuantity ||
+    Number(form.value.executionQuantity) <= 0
+  ) {
+    throw new Error("체결수량은 0보다 커야 합니다.");
   }
-  if (form.value.executionPrice === '' || Number(form.value.executionPrice) < 0) {
-    throw new Error('체결단가는 0 이상이어야 합니다.')
+  if (
+    form.value.executionPrice === "" ||
+    Number(form.value.executionPrice) < 0
+  ) {
+    throw new Error("체결단가는 0 이상이어야 합니다.");
   }
-  const sell = form.value.tradeType === 'SELL'
+  const sell = form.value.tradeType === "SELL";
   return {
     accountId: Number(form.value.accountId),
     stockId: Number(form.value.stockId),
@@ -284,59 +311,71 @@ function buildPayload(): TradePayload {
     tradeType: form.value.tradeType,
     executionQuantity: form.value.executionQuantity,
     executionPrice: form.value.executionPrice,
-    purchasePrice: sell && form.value.purchasePrice !== '' ? form.value.purchasePrice : null,
+    purchasePrice:
+      sell && form.value.purchasePrice !== "" ? form.value.purchasePrice : null,
     realizedProfitLoss:
-      sell && form.value.realizedProfitLoss !== '' ? form.value.realizedProfitLoss : null,
+      sell && form.value.realizedProfitLoss !== ""
+        ? form.value.realizedProfitLoss
+        : null,
     tradeMemo: form.value.tradeMemo.trim() || null,
-  }
+  };
 }
 
 async function saveTrade() {
-  saving.value = true
-  errorMessage.value = ''
+  saving.value = true;
+  errorMessage.value = "";
   try {
-    const payload = buildPayload()
-    if (editingId.value === null) await stockTradeApi.createTrade(payload)
-    else await stockTradeApi.updateTrade(editingId.value, payload)
-    setNotice(editingId.value === null ? '거래가 등록되었습니다.' : '거래가 수정되었습니다.')
-    showForm.value = false
-    await loadTrades()
+    const payload = buildPayload();
+    if (editingId.value === null) await stockTradeApi.createTrade(payload);
+    else await stockTradeApi.updateTrade(editingId.value, payload);
+    setNotice(
+      editingId.value === null
+        ? "거래가 등록되었습니다."
+        : "거래가 수정되었습니다.",
+    );
+    showForm.value = false;
+    await loadTrades();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '거래를 저장하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error ? error.message : "거래를 저장하지 못했습니다.";
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function deleteTrade(trade: StockTrade) {
-  const label = trade.tradeType === 'BUY' ? '매수' : '매도'
-  if (!window.confirm(`${trade.stockName} ${label} 거래를 삭제할까요?`)) return
+  const label = trade.tradeType === "BUY" ? "매수" : "매도";
+  if (!window.confirm(`${trade.stockName} ${label} 거래를 삭제할까요?`)) return;
   try {
-    await stockTradeApi.deleteTrade(trade.tradeId)
-    setNotice('거래가 삭제되었습니다.')
-    if (trades.value.length === 1 && page.value > 0) page.value -= 1
-    await loadTrades()
+    await stockTradeApi.deleteTrade(trade.tradeId);
+    setNotice("거래가 삭제되었습니다.");
+    if (trades.value.length === 1 && page.value > 0) page.value -= 1;
+    await loadTrades();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '거래를 삭제하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error ? error.message : "거래를 삭제하지 못했습니다.";
   }
 }
 
 async function onTradePage(event: { page: number }) {
-  if (event.page === page.value) return
-  page.value = event.page
-  await loadTrades()
+  if (event.page === page.value) return;
+  page.value = event.page;
+  await loadTrades();
 }
 
 onMounted(async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    await loadReferenceData()
-    await loadTrades()
+    await loadReferenceData();
+    await loadTrades();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '기준정보를 불러오지 못했습니다.'
-    loading.value = false
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : "기준정보를 불러오지 못했습니다.";
+    loading.value = false;
   }
-})
+});
 </script>
 
 <template>
@@ -347,7 +386,11 @@ onMounted(async () => {
           <p class="section-label">STOCK JOURNAL</p>
           <h1>매수·매도 기록</h1>
           <p>투자 판단과 거래 결과를 한곳에서 차분하게 기록하세요.</p>
-          <button class="primary-button hero-action" type="button" @click="openCreateForm()">
+          <button
+            class="primary-button hero-action"
+            type="button"
+            @click="openCreateForm()"
+          >
             <i class="pi pi-plus"></i> 새 거래 기록
           </button>
         </div>
@@ -377,15 +420,18 @@ onMounted(async () => {
           </div>
           <div class="summary-grid" aria-label="거래 요약">
             <article>
-              <span>전체 거래</span><strong>{{ formatNumber(totalElements, 0) }}</strong
+              <span>전체 거래</span
+              ><strong>{{ formatNumber(totalElements, 0) }}</strong
               ><small>건</small>
             </article>
             <article class="buy">
-              <span>현재 페이지 매수</span><strong>{{ formatNumber(currentBuyAmount) }}</strong
+              <span>현재 페이지 매수</span
+              ><strong>{{ formatNumber(currentBuyAmount) }}</strong
               ><small>원</small>
             </article>
             <article class="sell">
-              <span>현재 페이지 매도</span><strong>{{ formatNumber(currentSellAmount) }}</strong
+              <span>현재 페이지 매도</span
+              ><strong>{{ formatNumber(currentSellAmount) }}</strong
               ><small>원</small>
             </article>
             <article class="realized">
@@ -412,17 +458,30 @@ onMounted(async () => {
         <form class="filter-grid" @submit.prevent="search">
           <label
             ><span>시작일</span
-            ><input v-model="filters.dateFrom" type="date" @change="selectedSummaryPeriod = null"
+            ><input
+              v-model="filters.dateFrom"
+              type="date"
+              @change="selectedSummaryPeriod = null"
           /></label>
           <label
             ><span>종료일</span
-            ><input v-model="filters.dateTo" type="date" @change="selectedSummaryPeriod = null"
+            ><input
+              v-model="filters.dateTo"
+              type="date"
+              @change="selectedSummaryPeriod = null"
           /></label>
           <label
             ><span>증권사</span
-            ><select v-model="filters.brokerageId" @change="onFilterBrokerageChange">
+            ><select
+              v-model="filters.brokerageId"
+              @change="onFilterBrokerageChange"
+            >
               <option value="">전체 증권사</option>
-              <option v-for="item in brokerages" :key="item.brokerageId" :value="item.brokerageId">
+              <option
+                v-for="item in brokerages"
+                :key="item.brokerageId"
+                :value="item.brokerageId"
+              >
                 {{ item.brokerageName }}
               </option>
             </select></label
@@ -431,7 +490,11 @@ onMounted(async () => {
             ><span>계좌</span
             ><select v-model="filters.accountId">
               <option value="">전체 계좌</option>
-              <option v-for="item in accounts" :key="item.accountId" :value="item.accountId">
+              <option
+                v-for="item in accounts"
+                :key="item.accountId"
+                :value="item.accountId"
+              >
                 {{ item.accountName }}
               </option>
             </select></label
@@ -448,14 +511,20 @@ onMounted(async () => {
             ><span>시장</span
             ><select v-model="filters.marketCode">
               <option value="">전체 시장</option>
-              <option v-for="market in markets" :key="market" :value="market">{{ market }}</option>
+              <option v-for="market in markets" :key="market" :value="market">
+                {{ market }}
+              </option>
             </select></label
           >
           <label class="keyword-field"
             ><span>종목 검색</span
-            ><input v-model.trim="filters.keyword" placeholder="종목명 또는 종목코드"
+            ><input
+              v-model.trim="filters.keyword"
+              placeholder="종목명 또는 종목코드"
           /></label>
-          <button class="search-button" type="submit"><i class="pi pi-search"></i> 조회</button>
+          <button class="search-button" type="submit">
+            <i class="pi pi-search"></i> 조회
+          </button>
         </form>
       </section>
 
@@ -498,16 +567,21 @@ onMounted(async () => {
             >
             <Column field="tradeType" header="구분"
               ><template #body="{ data }"
-                ><span class="trade-badge" :class="data.tradeType.toLowerCase()">{{
-                  data.tradeType === 'BUY' ? '매수' : '매도'
-                }}</span></template
+                ><span
+                  class="trade-badge"
+                  :class="data.tradeType.toLowerCase()"
+                  >{{ data.tradeType === "BUY" ? "매수" : "매도" }}</span
+                ></template
               ></Column
             >
             <Column header="종목"
               ><template #body="{ data }"
                 ><div class="stock-cell">
                   <strong>{{ data.stockName }}</strong
-                  ><span>{{ data.stockCode }} · {{ data.marketCode || '시장 미지정' }}</span>
+                  ><span
+                    >{{ data.stockCode }} ·
+                    {{ data.marketCode || "시장 미지정" }}</span
+                  >
                 </div></template
               ></Column
             >
@@ -548,7 +622,9 @@ onMounted(async () => {
                     profit: Number(data.realizedProfitLoss) > 0,
                     loss: Number(data.realizedProfitLoss) < 0,
                   }"
-                  >{{ displayCurrency(data.realizedProfitLoss, data.currencyCode) }}</span
+                  >{{
+                    displayCurrency(data.realizedProfitLoss, data.currencyCode)
+                  }}</span
                 ></template
               ></Column
             >
@@ -562,7 +638,12 @@ onMounted(async () => {
                     @click="openDetail(data)"
                   >
                     <i class="pi pi-search"></i></button
-                  ><button title="수정" aria-label="수정" type="button" @click="openEditForm(data)">
+                  ><button
+                    title="수정"
+                    aria-label="수정"
+                    type="button"
+                    @click="openEditForm(data)"
+                  >
                     <i class="pi pi-pencil"></i></button
                   ><button
                     class="danger"
@@ -576,9 +657,12 @@ onMounted(async () => {
             ></Column>
             <template #empty
               ><div class="empty-state">
-                <i class="pi pi-inbox"></i><strong>등록된 거래가 없습니다</strong
+                <i class="pi pi-inbox"></i
+                ><strong>등록된 거래가 없습니다</strong
                 ><span>첫 매수 또는 매도 기록을 남겨보세요.</span
-                ><button type="button" @click="openCreateForm()">거래 기록하기</button>
+                ><button type="button" @click="openCreateForm()">
+                  거래 기록하기
+                </button>
               </div></template
             >
           </DataTable>
@@ -597,10 +681,15 @@ onMounted(async () => {
           <div>
             <p class="section-label">TRADE ENTRY</p>
             <h2 id="trade-form-title">
-              {{ editingId === null ? '새 거래 기록' : '거래 기록 수정' }}
+              {{ editingId === null ? "새 거래 기록" : "거래 기록 수정" }}
             </h2>
           </div>
-          <button class="close-button" type="button" aria-label="닫기" @click="closeForm">
+          <button
+            class="close-button"
+            type="button"
+            aria-label="닫기"
+            @click="closeForm"
+          >
             <i class="pi pi-times"></i>
           </button>
         </header>
@@ -608,13 +697,19 @@ onMounted(async () => {
           <div class="type-switch">
             <button
               type="button"
-              :class="{ active: form.tradeType === 'BUY', buy: form.tradeType === 'BUY' }"
+              :class="{
+                active: form.tradeType === 'BUY',
+                buy: form.tradeType === 'BUY',
+              }"
               @click="form.tradeType = 'BUY'"
             >
               <i class="pi pi-arrow-down-left"></i> 매수</button
             ><button
               type="button"
-              :class="{ active: form.tradeType === 'SELL', sell: form.tradeType === 'SELL' }"
+              :class="{
+                active: form.tradeType === 'SELL',
+                sell: form.tradeType === 'SELL',
+              }"
               @click="form.tradeType = 'SELL'"
             >
               <i class="pi pi-arrow-up-right"></i> 매도
@@ -622,12 +717,16 @@ onMounted(async () => {
           </div>
           <div class="form-grid">
             <label
-              ><span>거래일 <b>*</b></span
+              ><span class="required-label"><b>*</b> 거래일</span
               ><input v-model="form.tradeDate" type="date" required
             /></label>
             <label
-              ><span>증권사 <b>*</b></span
-              ><select v-model="form.brokerageId" required @change="onFormBrokerageChange">
+              ><span class="required-label"><b>*</b> 증권사</span
+              ><select
+                v-model="form.brokerageId"
+                required
+                @change="onFormBrokerageChange"
+              >
                 <option value="" disabled>증권사 선택</option>
                 <option
                   v-for="item in brokerages"
@@ -639,22 +738,27 @@ onMounted(async () => {
               </select></label
             >
             <label
-              ><span>계좌 <b>*</b></span
+              ><span class="required-label"><b>*</b> 계좌</span
               ><select v-model="form.accountId" required>
                 <option value="" disabled>계좌 선택</option>
-                <option v-for="item in formAccounts" :key="item.accountId" :value="item.accountId">
-                  {{ item.accountName }}{{ item.accountNumber ? ` · ${item.accountNumber}` : '' }}
+                <option
+                  v-for="item in formAccounts"
+                  :key="item.accountId"
+                  :value="item.accountId"
+                >
+                  {{ item.accountName
+                  }}{{ item.accountNumber ? ` · ${item.accountNumber}` : "" }}
                 </option>
               </select></label
             >
             <label
-              ><span>종목 <b>*</b></span>
+              ><span class="required-label"><b>*</b> 종목</span>
               <div class="stock-picker-field">
                 <div class="selected-stock">
                   {{
                     selectedStock
-                      ? `${selectedStock.stockName} (${selectedStock.stockCode}) · ${selectedStock.marketCode || '시장 미지정'}`
-                      : '종목을 선택해 주세요.'
+                      ? `${selectedStock.stockName} (${selectedStock.stockCode}) · ${selectedStock.marketCode || "시장 미지정"}`
+                      : "종목을 선택해 주세요."
                   }}
                 </div>
                 <button
@@ -667,7 +771,7 @@ onMounted(async () => {
                 </button></div
             ></label>
             <label
-              ><span>체결수량 <b>*</b></span
+              ><span class="required-label"><b>*</b> 체결수량</span
               ><input
                 v-model="form.executionQuantity"
                 type="number"
@@ -677,7 +781,7 @@ onMounted(async () => {
                 required
             /></label>
             <label
-              ><span>체결단가 <b>*</b></span
+              ><span class="required-label"><b>*</b> 체결단가</span
               ><input
                 v-model="form.executionPrice"
                 type="number"
@@ -689,11 +793,16 @@ onMounted(async () => {
           </div>
           <div class="amount-preview">
             <span>예상 체결금액</span
-            ><strong>{{ formatNumber(executionAmount) }} <small>원</small></strong>
+            ><strong
+              >{{ formatNumber(executionAmount) }} <small>원</small></strong
+            >
             <p>최종 금액은 서버에서 다시 계산됩니다.</p>
           </div>
           <div v-if="form.tradeType === 'SELL'" class="sell-fields">
-            <p><i class="pi pi-info-circle"></i> MTS에서 확인한 매도 결과를 기록하세요.</p>
+            <p>
+              <i class="pi pi-info-circle"></i> MTS에서 확인한 매도 결과를
+              기록하세요.
+            </p>
             <div class="form-grid">
               <label
                 ><span>매입단가</span
@@ -725,10 +834,17 @@ onMounted(async () => {
             <i class="pi pi-exclamation-circle"></i>{{ errorMessage }}
           </div>
           <footer>
-            <button class="secondary-button" type="button" @click="closeForm">취소</button
+            <button class="secondary-button" type="button" @click="closeForm">
+              취소</button
             ><button class="primary-button" type="submit" :disabled="saving">
               <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i
-              >{{ saving ? '저장 중' : editingId === null ? '거래 저장' : '수정 저장' }}
+              >{{
+                saving
+                  ? "저장 중"
+                  : editingId === null
+                    ? "거래 저장"
+                    : "수정 저장"
+              }}
             </button>
           </footer>
         </form>
@@ -759,14 +875,16 @@ onMounted(async () => {
             v-model="stockPickerFilters.keyword"
             placeholder="종목코드 또는 종목명"
             autofocus
-          /><input v-model="stockPickerFilters.marketCode" placeholder="시장코드" /><button
-            class="primary-button"
-            type="submit"
-          >
+          /><input
+            v-model="stockPickerFilters.marketCode"
+            placeholder="시장코드"
+          /><button class="primary-button" type="submit">
             <i class="pi pi-search"></i> 조회
           </button>
         </form>
-        <p v-if="stockPickerError" class="alert error">{{ stockPickerError }}</p>
+        <p v-if="stockPickerError" class="alert error">
+          {{ stockPickerError }}
+        </p>
         <div class="stock-picker-table">
           <DataTable
             :value="stockPickerResults"
@@ -781,20 +899,32 @@ onMounted(async () => {
               header="통화"
             /><Column header="선택"
               ><template #body="{ data }"
-                ><button class="secondary-button" type="button" @click.stop="selectStock(data)">
+                ><button
+                  class="secondary-button"
+                  type="button"
+                  @click.stop="selectStock(data)"
+                >
                   선택
                 </button></template
               ></Column
             ><template #empty
               ><div class="empty-state">
-                {{ stockPickerLoading ? '조회 중입니다.' : '검색 결과가 없습니다.' }}
+                {{
+                  stockPickerLoading
+                    ? "조회 중입니다."
+                    : "검색 결과가 없습니다."
+                }}
               </div></template
             ></DataTable
           >
         </div>
       </section>
     </div>
-    <div v-if="detailTrade" class="modal-backdrop detail-backdrop" @click.self="detailTrade = null">
+    <div
+      v-if="detailTrade"
+      class="modal-backdrop detail-backdrop"
+      @click.self="detailTrade = null"
+    >
       <section
         class="trade-modal detail-modal"
         role="dialog"
@@ -822,51 +952,72 @@ onMounted(async () => {
             </div>
             <div>
               <span>거래구분</span
-              ><strong>{{ detailTrade.tradeType === 'BUY' ? '매수' : '매도' }}</strong>
+              ><strong>{{
+                detailTrade.tradeType === "BUY" ? "매수" : "매도"
+              }}</strong>
             </div>
             <div>
-              <span>증권사</span><strong>{{ detailTrade.brokerageName }}</strong>
+              <span>증권사</span
+              ><strong>{{ detailTrade.brokerageName }}</strong>
             </div>
             <div>
               <span>계좌</span><strong>{{ detailTrade.accountName }}</strong>
             </div>
             <div>
               <span>종목</span
-              ><strong>{{ detailTrade.stockName }} ({{ detailTrade.stockCode }})</strong>
+              ><strong
+                >{{ detailTrade.stockName }} ({{
+                  detailTrade.stockCode
+                }})</strong
+              >
             </div>
             <div>
               <span>시장 · 통화</span
               ><strong
-                >{{ detailTrade.marketCode || '시장 미지정' }} ·
+                >{{ detailTrade.marketCode || "시장 미지정" }} ·
                 {{ detailTrade.currencyCode }}</strong
               >
             </div>
             <div>
               <span>체결수량</span
-              ><strong>{{ formatNumber(detailTrade.executionQuantity, 6) }}</strong>
+              ><strong>{{
+                formatNumber(detailTrade.executionQuantity, 6)
+              }}</strong>
             </div>
             <div>
               <span>체결단가</span
               ><strong>{{
-                displayCurrency(detailTrade.executionPrice, detailTrade.currencyCode)
+                displayCurrency(
+                  detailTrade.executionPrice,
+                  detailTrade.currencyCode,
+                )
               }}</strong>
             </div>
             <div>
               <span>체결금액</span
               ><strong>{{
-                displayCurrency(detailTrade.executionAmount, detailTrade.currencyCode)
+                displayCurrency(
+                  detailTrade.executionAmount,
+                  detailTrade.currencyCode,
+                )
               }}</strong>
             </div>
             <div>
               <span>매입단가</span
               ><strong>{{
-                displayCurrency(detailTrade.purchasePrice, detailTrade.currencyCode)
+                displayCurrency(
+                  detailTrade.purchasePrice,
+                  detailTrade.currencyCode,
+                )
               }}</strong>
             </div>
             <div>
               <span>실현손익</span
               ><strong>{{
-                displayCurrency(detailTrade.realizedProfitLoss, detailTrade.currencyCode)
+                displayCurrency(
+                  detailTrade.realizedProfitLoss,
+                  detailTrade.currencyCode,
+                )
               }}</strong>
             </div>
             <div>
@@ -875,10 +1026,16 @@ onMounted(async () => {
           </div>
           <div class="detail-memo">
             <span>거래 메모</span>
-            <p>{{ detailTrade.tradeMemo || '등록된 메모가 없습니다.' }}</p>
+            <p>{{ detailTrade.tradeMemo || "등록된 메모가 없습니다." }}</p>
           </div>
           <footer>
-            <button class="secondary-button" type="button" @click="detailTrade = null">닫기</button>
+            <button
+              class="secondary-button"
+              type="button"
+              @click="detailTrade = null"
+            >
+              닫기
+            </button>
           </footer>
         </div>
       </section>

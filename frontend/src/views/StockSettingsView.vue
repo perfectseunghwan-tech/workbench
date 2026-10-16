@@ -1,122 +1,158 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import { stockMasterApi, type ManagedStock, type StockPayload } from '@/services/stockMasterApi'
+import { onMounted, ref } from "vue";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import {
+  stockMasterApi,
+  type ManagedStock,
+  type StockPayload,
+} from "@/services/stockMasterApi";
 
 const stocks = ref<ManagedStock[]>([]),
   loading = ref(false),
   saving = ref(false),
-  errorMessage = ref(''),
-  notice = ref('')
+  errorMessage = ref(""),
+  notice = ref("");
 const page = ref(0),
   size = 20,
-  total = ref(0)
-const filters = ref({ keyword: '', marketCode: '', useYn: '' as '' | 'true' | 'false' })
+  total = ref(0);
+const filters = ref({
+  keyword: "",
+  marketCode: "",
+  useYn: "" as "" | "true" | "false",
+});
 const showForm = ref(false),
-  editingId = ref<number | null>(null)
+  editingId = ref<number | null>(null);
 const form = ref<StockPayload>({
-  stockCode: '',
-  stockName: '',
+  stockCode: "",
+  stockName: "",
   marketCode: null,
-  currencyCode: 'KRW',
+  currencyCode: "KRW",
   useYn: true,
-})
+});
 
 function resetForm() {
-  form.value = { stockCode: '', stockName: '', marketCode: null, currencyCode: 'KRW', useYn: true }
+  form.value = {
+    stockCode: "",
+    stockName: "",
+    marketCode: null,
+    currencyCode: "KRW",
+    useYn: true,
+  };
 }
 function params() {
-  const p = new URLSearchParams({ page: String(page.value), size: String(size) })
-  if (filters.value.keyword.trim()) p.set('keyword', filters.value.keyword.trim())
-  if (filters.value.marketCode.trim()) p.set('marketCode', filters.value.marketCode.trim())
-  if (filters.value.useYn) p.set('useYn', filters.value.useYn)
-  return p
+  const p = new URLSearchParams({
+    page: String(page.value),
+    size: String(size),
+  });
+  if (filters.value.keyword.trim())
+    p.set("keyword", filters.value.keyword.trim());
+  if (filters.value.marketCode.trim())
+    p.set("marketCode", filters.value.marketCode.trim());
+  if (filters.value.useYn) p.set("useYn", filters.value.useYn);
+  return p;
 }
 async function load() {
-  loading.value = true
-  errorMessage.value = ''
+  loading.value = true;
+  errorMessage.value = "";
   try {
-    const result = await stockMasterApi.getStocks(params())
-    stocks.value = result.content
-    total.value = result.totalElements
+    const result = await stockMasterApi.getStocks(params());
+    stocks.value = result.content;
+    total.value = result.totalElements;
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : '종목 목록을 불러오지 못했습니다.'
+    errorMessage.value =
+      e instanceof Error ? e.message : "종목 목록을 불러오지 못했습니다.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 async function search() {
-  page.value = 0
-  await load()
+  page.value = 0;
+  await load();
 }
 async function reset() {
-  filters.value = { keyword: '', marketCode: '', useYn: '' }
-  await search()
+  filters.value = { keyword: "", marketCode: "", useYn: "" };
+  await search();
 }
 function openCreate() {
-  editingId.value = null
-  resetForm()
-  errorMessage.value = ''
-  showForm.value = true
+  editingId.value = null;
+  resetForm();
+  errorMessage.value = "";
+  showForm.value = true;
 }
 function openEdit(stock: ManagedStock) {
-  editingId.value = stock.stockId
+  editingId.value = stock.stockId;
   form.value = {
     stockCode: stock.stockCode,
     stockName: stock.stockName,
     marketCode: stock.marketCode,
     currencyCode: stock.currencyCode,
     useYn: stock.useYn,
-  }
-  errorMessage.value = ''
-  showForm.value = true
+  };
+  errorMessage.value = "";
+  showForm.value = true;
 }
 async function save() {
-  saving.value = true
-  errorMessage.value = ''
+  saving.value = true;
+  errorMessage.value = "";
   try {
-    const payload = { ...form.value, marketCode: form.value.marketCode?.trim() || null }
-    if (editingId.value === null) await stockMasterApi.createStock(payload)
-    else await stockMasterApi.updateStock(editingId.value, payload)
-    notice.value = editingId.value === null ? '종목이 등록되었습니다.' : '종목이 수정되었습니다.'
-    showForm.value = false
-    await load()
+    const payload = {
+      ...form.value,
+      marketCode: form.value.marketCode?.trim() || null,
+    };
+    if (editingId.value === null) await stockMasterApi.createStock(payload);
+    else await stockMasterApi.updateStock(editingId.value, payload);
+    notice.value =
+      editingId.value === null
+        ? "종목이 등록되었습니다."
+        : "종목이 수정되었습니다.";
+    showForm.value = false;
+    await load();
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : '저장하지 못했습니다.'
+    errorMessage.value =
+      e instanceof Error ? e.message : "저장하지 못했습니다.";
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 async function toggle(stock: ManagedStock) {
   if (
-    !window.confirm(`${stock.stockName} 종목을 ${stock.useYn ? '사용 중지' : '사용'}로 변경할까요?`)
+    !window.confirm(
+      `${stock.stockName} 종목을 ${stock.useYn ? "사용 중지" : "사용"}로 변경할까요?`,
+    )
   )
-    return
+    return;
   try {
-    await stockMasterApi.updateStockUsage(stock.stockId, !stock.useYn)
-    notice.value = '사용 상태가 변경되었습니다.'
-    await load()
+    await stockMasterApi.updateStockUsage(stock.stockId, !stock.useYn);
+    notice.value = "사용 상태가 변경되었습니다.";
+    await load();
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : '상태를 변경하지 못했습니다.'
+    errorMessage.value =
+      e instanceof Error ? e.message : "상태를 변경하지 못했습니다.";
   }
 }
 async function remove(stock: ManagedStock) {
-  if (!window.confirm(`${stock.stockName} (${stock.stockCode}) 종목을 삭제할까요?`)) return
+  if (
+    !window.confirm(
+      `${stock.stockName} (${stock.stockCode}) 종목을 삭제할까요?`,
+    )
+  )
+    return;
   try {
-    await stockMasterApi.deleteStock(stock.stockId)
-    if (stocks.value.length === 1 && page.value > 0) page.value--
-    notice.value = '종목이 삭제되었습니다.'
-    await load()
+    await stockMasterApi.deleteStock(stock.stockId);
+    if (stocks.value.length === 1 && page.value > 0) page.value--;
+    notice.value = "종목이 삭제되었습니다.";
+    await load();
   } catch (e) {
-    errorMessage.value = e instanceof Error ? e.message : '삭제하지 못했습니다.'
+    errorMessage.value =
+      e instanceof Error ? e.message : "삭제하지 못했습니다.";
   }
 }
 async function onPage(event: { page: number }) {
-  page.value = event.page
-  await load()
+  page.value = event.page;
+  await load();
 }
-onMounted(load)
+onMounted(load);
 </script>
 
 <template>
@@ -133,20 +169,25 @@ onMounted(load)
         </button>
       </header>
       <form class="filters" @submit.prevent="search">
-        <input v-model="filters.keyword" placeholder="종목코드 또는 종목명" /><input
-          v-model="filters.marketCode"
-          placeholder="시장코드"
-        /><select v-model="filters.useYn">
+        <input
+          v-model="filters.keyword"
+          placeholder="종목코드 또는 종목명"
+        /><input v-model="filters.marketCode" placeholder="시장코드" /><select
+          v-model="filters.useYn"
+        >
           <option value="">전체 상태</option>
           <option value="true">사용 중</option>
           <option value="false">사용 중지</option></select
-        ><button class="primary" type="submit"><i class="pi pi-search"></i> 조회</button
+        ><button class="primary" type="submit">
+          <i class="pi pi-search"></i> 조회</button
         ><button class="secondary" type="button" @click="reset">초기화</button>
       </form>
       <p v-if="errorMessage && !showForm" class="alert">
         <i class="pi pi-exclamation-circle"></i>{{ errorMessage }}
       </p>
-      <p v-if="notice" class="toast"><i class="pi pi-check-circle"></i>{{ notice }}</p>
+      <p v-if="notice" class="toast">
+        <i class="pi pi-check-circle"></i>{{ notice }}
+      </p>
       <section class="panel">
         <DataTable
           :value="stocks"
@@ -165,17 +206,24 @@ onMounted(load)
             field="stockName"
             header="종목명"
           /><Column field="marketCode" header="시장코드"
-            ><template #body="{ data }">{{ data.marketCode || '—' }}</template></Column
+            ><template #body="{ data }">{{
+              data.marketCode || "—"
+            }}</template></Column
           ><Column field="currencyCode" header="통화" /><Column header="상태"
             ><template #body="{ data }"
               ><span class="status" :class="{ off: !data.useYn }">{{
-                data.useYn ? '사용 중' : '사용 중지'
+                data.useYn ? "사용 중" : "사용 중지"
               }}</span></template
             ></Column
           ><Column field="updatedAt" header="수정일시" /><Column header="관리"
             ><template #body="{ data }"
               ><div class="actions">
-                <button type="button" title="수정" aria-label="수정" @click="openEdit(data)">
+                <button
+                  type="button"
+                  title="수정"
+                  aria-label="수정"
+                  @click="openEdit(data)"
+                >
                   <i class="pi pi-pencil"></i></button
                 ><button
                   type="button"
@@ -183,37 +231,65 @@ onMounted(load)
                   aria-label="사용 상태 변경"
                   @click="toggle(data)"
                 >
-                  <i :class="data.useYn ? 'pi pi-pause-circle' : 'pi pi-play-circle'"></i></button
-                ><button type="button" title="삭제" aria-label="삭제" @click="remove(data)">
+                  <i
+                    :class="
+                      data.useYn ? 'pi pi-pause-circle' : 'pi pi-play-circle'
+                    "
+                  ></i></button
+                ><button
+                  type="button"
+                  title="삭제"
+                  aria-label="삭제"
+                  @click="remove(data)"
+                >
                   <i class="pi pi-trash"></i>
                 </button></div></template
           ></Column>
-          <template #empty><div class="empty">검색 조건에 맞는 종목이 없습니다.</div></template>
+          <template #empty
+            ><div class="empty">
+              검색 조건에 맞는 종목이 없습니다.
+            </div></template
+          >
         </DataTable>
       </section>
     </section>
-    <div v-if="showForm" class="backdrop" @click.self="!saving && (showForm = false)">
+    <div
+      v-if="showForm"
+      class="backdrop"
+      @click.self="!saving && (showForm = false)"
+    >
       <section class="modal" role="dialog" aria-modal="true">
         <header>
-          <h2>{{ editingId === null ? '종목 등록' : '종목 수정' }}</h2>
+          <h2>{{ editingId === null ? "종목 등록" : "종목 수정" }}</h2>
           <button type="button" aria-label="닫기" @click="showForm = false">
             <i class="pi pi-times"></i>
           </button>
         </header>
         <form @submit.prevent="save">
-          <label>종목코드 <b>*</b><input v-model="form.stockCode" maxlength="30" required /></label
-          ><label>종목명 <b>*</b><input v-model="form.stockName" maxlength="200" required /></label
-          ><label>시장코드<input v-model="form.marketCode" maxlength="30" /></label
+          <label
+            ><span class="required-label"><b>*</b> 종목코드</span
+            ><input v-model="form.stockCode" maxlength="30" required /></label
           ><label
-            >통화코드 <b>*</b><input v-model="form.currencyCode" maxlength="10" required /></label
+            ><span class="required-label"><b>*</b> 종목명</span
+            ><input v-model="form.stockName" maxlength="200" required /></label
+          ><label
+            >시장코드<input v-model="form.marketCode" maxlength="30" /></label
+          ><label
+            ><span class="required-label"><b>*</b> 통화코드</span
+            ><input
+              v-model="form.currencyCode"
+              maxlength="10"
+              required /></label
           ><label class="check"
-            ><input v-model="form.useYn" type="checkbox" /> 사용 중인 종목</label
+            ><input v-model="form.useYn" type="checkbox" /> 사용 중인
+            종목</label
           >
           <p v-if="errorMessage" class="alert">{{ errorMessage }}</p>
           <footer>
-            <button class="secondary" type="button" @click="showForm = false">취소</button
+            <button class="secondary" type="button" @click="showForm = false">
+              취소</button
             ><button class="primary" type="submit" :disabled="saving">
-              {{ saving ? '저장 중' : '저장' }}
+              {{ saving ? "저장 중" : "저장" }}
             </button>
           </footer>
         </form>

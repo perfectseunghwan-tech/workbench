@@ -252,6 +252,20 @@ Once implementation begins:
 - Resolve non-critical technical issues using the smallest compatible change
   when the correct approach is clear from existing code.
 
+### Source formatting
+
+- Before completing any source-code modification or new development, format all
+  source files created or modified by Codex during the current task.
+- For frontend source, use the project's configured Prettier formatter. Prefer
+  formatting only the files changed in the current task with
+  `npm.cmd --prefix frontend exec -- prettier --write --experimental-cli <files>`.
+- Use `npm run format` from the workspace root only when formatting the entire
+  frontend source tree is explicitly appropriate.
+- Do not format unrelated files or overwrite unrelated user changes.
+- If an affected project area has no configured formatter, preserve its existing
+  style and report that automated formatting was unavailable.
+- Review the resulting diff after formatting and before running final validation.
+
 ## 10. Database Rules
 
 - Do not modify the database schema unless required by the task or specification.

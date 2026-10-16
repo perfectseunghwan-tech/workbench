@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { computed, onMounted, ref } from "vue";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
 import {
   investmentMasterApi,
   type ManagedBrokerage,
@@ -9,96 +9,116 @@ import {
   type BrokeragePayload,
   type AccountPayload,
   type AccountMemo,
-} from '@/services/investmentMasterApi'
+} from "@/services/investmentMasterApi";
 
-type AccountFormMode = 'create' | 'edit' | 'view'
+type AccountFormMode = "create" | "edit" | "view";
 
-const brokerages = ref<ManagedBrokerage[]>([])
-const accounts = ref<ManagedAccount[]>([])
-const selectedBrokerageId = ref<number | null>(null)
-const brokerageKeyword = ref('')
-const brokerageUseYn = ref('')
-const accountKeyword = ref('')
-const accountUseYn = ref('')
-const brokeragePage = ref(0)
-const brokeragePages = ref(0)
-const brokerageTotal = ref(0)
-const accountPage = ref(0)
-const accountTotal = ref(0)
-const loadingBrokerages = ref(false)
-const loadingAccounts = ref(false)
-const loadingMemos = ref(false)
-const saving = ref(false)
-const errorMessage = ref('')
-const noticeMessage = ref('')
-const showBrokerageForm = ref(false)
-const showAccountForm = ref(false)
-const showMemoForm = ref(false)
-const accountFormMode = ref<AccountFormMode>('create')
-const editingBrokerageId = ref<number | null>(null)
-const editingAccountId = ref<number | null>(null)
-const brokerageForm = ref({ brokerageName: '', useYn: true })
-const accountForm = ref({ brokerageId: 0, accountName: '', accountNumber: '', useYn: true })
-const accountMemos = ref<AccountMemo[]>([])
-const memoContent = ref('')
-const editingMemoId = ref<number | null>(null)
-const pendingMemoContent = ref('')
-const memoErrorMessage = ref('')
-const memoHistoryErrorMessage = ref('')
-const pageSize = 20
+const brokerages = ref<ManagedBrokerage[]>([]);
+const accounts = ref<ManagedAccount[]>([]);
+const selectedBrokerageId = ref<number | null>(null);
+const brokerageKeyword = ref("");
+const brokerageUseYn = ref("");
+const accountKeyword = ref("");
+const accountUseYn = ref("");
+const brokeragePage = ref(0);
+const brokeragePages = ref(0);
+const brokerageTotal = ref(0);
+const accountPage = ref(0);
+const accountTotal = ref(0);
+const loadingBrokerages = ref(false);
+const loadingAccounts = ref(false);
+const loadingMemos = ref(false);
+const saving = ref(false);
+const errorMessage = ref("");
+const noticeMessage = ref("");
+const showBrokerageForm = ref(false);
+const showAccountForm = ref(false);
+const showMemoForm = ref(false);
+const accountFormMode = ref<AccountFormMode>("create");
+const editingBrokerageId = ref<number | null>(null);
+const editingAccountId = ref<number | null>(null);
+const brokerageForm = ref({ brokerageName: "", useYn: true });
+const accountForm = ref({
+  brokerageId: 0,
+  accountName: "",
+  accountNumber: "",
+  useYn: true,
+});
+const accountMemos = ref<AccountMemo[]>([]);
+const memoContent = ref("");
+const editingMemoId = ref<number | null>(null);
+const pendingMemoContent = ref("");
+const memoErrorMessage = ref("");
+const memoHistoryErrorMessage = ref("");
+const pageSize = 20;
 
 const selectedBrokerage = computed(
-  () => brokerages.value.find((item) => item.brokerageId === selectedBrokerageId.value) ?? null,
-)
-const activeBrokerages = computed(() => brokerages.value.filter((item) => item.useYn))
+  () =>
+    brokerages.value.find(
+      (item) => item.brokerageId === selectedBrokerageId.value,
+    ) ?? null,
+);
+const activeBrokerages = computed(() =>
+  brokerages.value.filter((item) => item.useYn),
+);
 
-function params(page: number, keyword: string, useYn: string, brokerageId?: number) {
-  const query = new URLSearchParams({ page: String(page), size: String(pageSize) })
-  if (keyword.trim()) query.set('keyword', keyword.trim())
-  if (useYn !== '') query.set('useYn', useYn)
-  if (brokerageId) query.set('brokerageId', String(brokerageId))
-  return query
+function params(
+  page: number,
+  keyword: string,
+  useYn: string,
+  brokerageId?: number,
+) {
+  const query = new URLSearchParams({
+    page: String(page),
+    size: String(pageSize),
+  });
+  if (keyword.trim()) query.set("keyword", keyword.trim());
+  if (useYn !== "") query.set("useYn", useYn);
+  if (brokerageId) query.set("brokerageId", String(brokerageId));
+  return query;
 }
 
 function setNotice(message: string) {
-  noticeMessage.value = message
+  noticeMessage.value = message;
   window.setTimeout(() => {
-    if (noticeMessage.value === message) noticeMessage.value = ''
-  }, 3000)
+    if (noticeMessage.value === message) noticeMessage.value = "";
+  }, 3000);
 }
 
 async function loadBrokerages(keepSelection = true) {
-  loadingBrokerages.value = true
-  errorMessage.value = ''
+  loadingBrokerages.value = true;
+  errorMessage.value = "";
   try {
     const result = await investmentMasterApi.getBrokerages(
       params(brokeragePage.value, brokerageKeyword.value, brokerageUseYn.value),
-    )
-    brokerages.value = result.content
-    brokeragePages.value = result.totalPages
-    brokerageTotal.value = result.totalElements
+    );
+    brokerages.value = result.content;
+    brokeragePages.value = result.totalPages;
+    brokerageTotal.value = result.totalElements;
     const selectedExists = brokerages.value.some(
       (item) => item.brokerageId === selectedBrokerageId.value,
-    )
+    );
     if (!keepSelection || !selectedExists)
-      selectedBrokerageId.value = brokerages.value[0]?.brokerageId ?? null
-    await loadAccounts()
+      selectedBrokerageId.value = brokerages.value[0]?.brokerageId ?? null;
+    await loadAccounts();
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : '증권사 정보를 불러오지 못했습니다.'
+      error instanceof Error
+        ? error.message
+        : "증권사 정보를 불러오지 못했습니다.";
   } finally {
-    loadingBrokerages.value = false
+    loadingBrokerages.value = false;
   }
 }
 
 async function loadAccounts() {
   if (!selectedBrokerageId.value) {
-    accounts.value = []
-    accountTotal.value = 0
-    return
+    accounts.value = [];
+    accountTotal.value = 0;
+    return;
   }
-  loadingAccounts.value = true
-  errorMessage.value = ''
+  loadingAccounts.value = true;
+  errorMessage.value = "";
   try {
     const result = await investmentMasterApi.getAccounts(
       params(
@@ -107,328 +127,375 @@ async function loadAccounts() {
         accountUseYn.value,
         selectedBrokerageId.value,
       ),
-    )
-    accounts.value = result.content
-    accountTotal.value = result.totalElements
+    );
+    accounts.value = result.content;
+    accountTotal.value = result.totalElements;
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '계좌 정보를 불러오지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : "계좌 정보를 불러오지 못했습니다.";
   } finally {
-    loadingAccounts.value = false
+    loadingAccounts.value = false;
   }
 }
 
 async function selectBrokerage(id: number) {
-  selectedBrokerageId.value = id
-  accountPage.value = 0
-  accountKeyword.value = ''
-  accountUseYn.value = ''
-  await loadAccounts()
+  selectedBrokerageId.value = id;
+  accountPage.value = 0;
+  accountKeyword.value = "";
+  accountUseYn.value = "";
+  await loadAccounts();
 }
 
 async function searchBrokerages() {
-  brokeragePage.value = 0
-  await loadBrokerages(false)
+  brokeragePage.value = 0;
+  await loadBrokerages(false);
 }
 async function searchAccounts() {
-  accountPage.value = 0
-  await loadAccounts()
+  accountPage.value = 0;
+  await loadAccounts();
 }
 
 function openBrokerageCreate() {
-  editingBrokerageId.value = null
-  brokerageForm.value = { brokerageName: '', useYn: true }
-  showBrokerageForm.value = true
-  errorMessage.value = ''
+  editingBrokerageId.value = null;
+  brokerageForm.value = { brokerageName: "", useYn: true };
+  showBrokerageForm.value = true;
+  errorMessage.value = "";
 }
 
 function openBrokerageEdit(item: ManagedBrokerage) {
-  editingBrokerageId.value = item.brokerageId
-  brokerageForm.value = { brokerageName: item.brokerageName, useYn: item.useYn }
-  showBrokerageForm.value = true
-  errorMessage.value = ''
+  editingBrokerageId.value = item.brokerageId;
+  brokerageForm.value = {
+    brokerageName: item.brokerageName,
+    useYn: item.useYn,
+  };
+  showBrokerageForm.value = true;
+  errorMessage.value = "";
 }
 
 async function saveBrokerage() {
-  const name = brokerageForm.value.brokerageName.trim()
+  const name = brokerageForm.value.brokerageName.trim();
   if (!name) {
-    errorMessage.value = '증권사명을 입력해 주세요.'
-    return
+    errorMessage.value = "증권사명을 입력해 주세요.";
+    return;
   }
-  saving.value = true
-  errorMessage.value = ''
-  const payload: BrokeragePayload = { brokerageName: name, useYn: brokerageForm.value.useYn }
+  saving.value = true;
+  errorMessage.value = "";
+  const payload: BrokeragePayload = {
+    brokerageName: name,
+    useYn: brokerageForm.value.useYn,
+  };
   try {
     const saved =
       editingBrokerageId.value === null
         ? await investmentMasterApi.createBrokerage(payload)
-        : await investmentMasterApi.updateBrokerage(editingBrokerageId.value, payload)
-    selectedBrokerageId.value = saved.brokerageId
-    showBrokerageForm.value = false
+        : await investmentMasterApi.updateBrokerage(
+            editingBrokerageId.value,
+            payload,
+          );
+    selectedBrokerageId.value = saved.brokerageId;
+    showBrokerageForm.value = false;
     setNotice(
-      editingBrokerageId.value === null ? '증권사가 등록되었습니다.' : '증권사가 수정되었습니다.',
-    )
-    await loadBrokerages()
+      editingBrokerageId.value === null
+        ? "증권사가 등록되었습니다."
+        : "증권사가 수정되었습니다.",
+    );
+    await loadBrokerages();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '증권사를 저장하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error ? error.message : "증권사를 저장하지 못했습니다.";
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function toggleBrokerage(item: ManagedBrokerage) {
   if (
     item.useYn &&
-    !window.confirm('증권사를 사용 중지하면 거래 등록 화면에서 하위 계좌가 숨겨집니다. 계속할까요?')
+    !window.confirm(
+      "증권사를 사용 중지하면 거래 등록 화면에서 하위 계좌가 숨겨집니다. 계속할까요?",
+    )
   )
-    return
+    return;
   try {
-    await investmentMasterApi.updateBrokerageUsage(item.brokerageId, !item.useYn)
-    setNotice(item.useYn ? '증권사 사용을 중지했습니다.' : '증권사를 다시 사용합니다.')
-    await loadBrokerages()
+    await investmentMasterApi.updateBrokerageUsage(
+      item.brokerageId,
+      !item.useYn,
+    );
+    setNotice(
+      item.useYn ? "증권사 사용을 중지했습니다." : "증권사를 다시 사용합니다.",
+    );
+    await loadBrokerages();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '사용 상태를 변경하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : "사용 상태를 변경하지 못했습니다.";
   }
 }
 
 function openAccountCreate() {
   if (!selectedBrokerage.value?.useYn) {
-    errorMessage.value = '사용 중인 증권사를 선택해야 계좌를 등록할 수 있습니다.'
-    return
+    errorMessage.value =
+      "사용 중인 증권사를 선택해야 계좌를 등록할 수 있습니다.";
+    return;
   }
-  editingAccountId.value = null
-  accountFormMode.value = 'create'
-  resetAccountMemos()
+  editingAccountId.value = null;
+  accountFormMode.value = "create";
+  resetAccountMemos();
   accountForm.value = {
     brokerageId: selectedBrokerage.value.brokerageId,
-    accountName: '',
-    accountNumber: '',
+    accountName: "",
+    accountNumber: "",
     useYn: true,
-  }
-  showAccountForm.value = true
-  errorMessage.value = ''
+  };
+  showAccountForm.value = true;
+  errorMessage.value = "";
 }
 
 async function openAccount(item: ManagedAccount, mode: AccountFormMode) {
   try {
-    const detail = await investmentMasterApi.getAccount(item.accountId)
-    resetAccountMemos()
-    editingAccountId.value = detail.accountId
-    accountFormMode.value = mode
+    const detail = await investmentMasterApi.getAccount(item.accountId);
+    resetAccountMemos();
+    editingAccountId.value = detail.accountId;
+    accountFormMode.value = mode;
     accountForm.value = {
       brokerageId: detail.brokerageId,
       accountName: detail.accountName,
-      accountNumber: detail.accountNumber ?? '',
+      accountNumber: detail.accountNumber ?? "",
       useYn: detail.useYn,
-    }
-    showAccountForm.value = true
-    errorMessage.value = ''
-    await loadAccountMemos(detail.accountId)
+    };
+    showAccountForm.value = true;
+    errorMessage.value = "";
+    await loadAccountMemos(detail.accountId);
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : '계좌 상세정보를 불러오지 못했습니다.'
+      error instanceof Error
+        ? error.message
+        : "계좌 상세정보를 불러오지 못했습니다.";
   }
 }
 
 async function openAccountEdit(item: ManagedAccount) {
-  await openAccount(item, 'edit')
+  await openAccount(item, "edit");
 }
 
 async function openAccountView(item: ManagedAccount) {
-  await openAccount(item, 'view')
+  await openAccount(item, "view");
 }
 
 function closeAccountForm() {
-  showAccountForm.value = false
-  closeMemoForm()
-  editingAccountId.value = null
-  accountFormMode.value = 'create'
-  resetAccountMemos()
+  showAccountForm.value = false;
+  closeMemoForm();
+  editingAccountId.value = null;
+  accountFormMode.value = "create";
+  resetAccountMemos();
 }
 
 function openMemoForm() {
-  editingMemoId.value = null
-  memoContent.value = pendingMemoContent.value
-  memoErrorMessage.value = ''
-  showMemoForm.value = true
+  editingMemoId.value = null;
+  memoContent.value = pendingMemoContent.value;
+  memoErrorMessage.value = "";
+  showMemoForm.value = true;
 }
 
 function openMemoEdit(memo: AccountMemo) {
-  editingMemoId.value = memo.memoId
-  memoContent.value = memo.memoContent
-  memoErrorMessage.value = ''
-  showMemoForm.value = true
+  editingMemoId.value = memo.memoId;
+  memoContent.value = memo.memoContent;
+  memoErrorMessage.value = "";
+  showMemoForm.value = true;
 }
 
 function closeMemoForm() {
-  showMemoForm.value = false
-  memoContent.value = ''
-  editingMemoId.value = null
-  memoErrorMessage.value = ''
+  showMemoForm.value = false;
+  memoContent.value = "";
+  editingMemoId.value = null;
+  memoErrorMessage.value = "";
 }
 
 function resetAccountMemos() {
-  accountMemos.value = []
-  memoContent.value = ''
-  editingMemoId.value = null
-  pendingMemoContent.value = ''
-  memoErrorMessage.value = ''
-  memoHistoryErrorMessage.value = ''
-  loadingMemos.value = false
+  accountMemos.value = [];
+  memoContent.value = "";
+  editingMemoId.value = null;
+  pendingMemoContent.value = "";
+  memoErrorMessage.value = "";
+  memoHistoryErrorMessage.value = "";
+  loadingMemos.value = false;
 }
 
 async function saveAccount() {
   if (!accountForm.value.brokerageId || !accountForm.value.accountName.trim()) {
-    errorMessage.value = '증권사와 계좌 별칭을 입력해 주세요.'
-    return
+    errorMessage.value = "증권사와 계좌 별칭을 입력해 주세요.";
+    return;
   }
-  saving.value = true
-  errorMessage.value = ''
-  const accountId = editingAccountId.value
-  const isNewAccount = accountId === null
+  saving.value = true;
+  errorMessage.value = "";
+  const accountId = editingAccountId.value;
+  const isNewAccount = accountId === null;
   const payload: AccountPayload = {
     brokerageId: accountForm.value.brokerageId,
     accountName: accountForm.value.accountName.trim(),
     accountNumber: accountForm.value.accountNumber.trim() || null,
     useYn: accountForm.value.useYn,
-  }
+  };
   try {
     const savedAccount = isNewAccount
       ? await investmentMasterApi.createAccount(payload)
-      : await investmentMasterApi.updateAccount(accountId, payload)
-    let memoSaveError = ''
+      : await investmentMasterApi.updateAccount(accountId, payload);
+    let memoSaveError = "";
     if (pendingMemoContent.value.trim()) {
       try {
         await investmentMasterApi.createAccountMemo(savedAccount.accountId, {
           memoContent: pendingMemoContent.value.trim(),
-        })
+        });
       } catch (error) {
-        memoSaveError = error instanceof Error ? error.message : '메모를 등록하지 못했습니다.'
+        memoSaveError =
+          error instanceof Error
+            ? error.message
+            : "메모를 등록하지 못했습니다.";
       }
     }
-    editingAccountId.value = savedAccount.accountId
-    accountFormMode.value = 'view'
-    pendingMemoContent.value = ''
-    memoContent.value = ''
-    memoErrorMessage.value = ''
-    await loadAccountMemos(savedAccount.accountId)
+    editingAccountId.value = savedAccount.accountId;
+    accountFormMode.value = "view";
+    pendingMemoContent.value = "";
+    memoContent.value = "";
+    memoErrorMessage.value = "";
+    await loadAccountMemos(savedAccount.accountId);
     if (memoSaveError) {
-      errorMessage.value = `계좌는 저장되었지만 메모를 등록하지 못했습니다. ${memoSaveError}`
+      errorMessage.value = `계좌는 저장되었지만 메모를 등록하지 못했습니다. ${memoSaveError}`;
     } else {
-      setNotice(isNewAccount ? '계좌가 등록되었습니다.' : '계좌가 수정되었습니다.')
+      setNotice(
+        isNewAccount ? "계좌가 등록되었습니다." : "계좌가 수정되었습니다.",
+      );
     }
-    await loadAccounts()
-    await loadBrokerages()
+    await loadAccounts();
+    await loadBrokerages();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '계좌를 저장하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error ? error.message : "계좌를 저장하지 못했습니다.";
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function toggleAccount(item: ManagedAccount) {
   try {
-    await investmentMasterApi.updateAccountUsage(item.accountId, !item.useYn)
-    setNotice(item.useYn ? '계좌 사용을 중지했습니다.' : '계좌를 다시 사용합니다.')
-    await loadAccounts()
+    await investmentMasterApi.updateAccountUsage(item.accountId, !item.useYn);
+    setNotice(
+      item.useYn ? "계좌 사용을 중지했습니다." : "계좌를 다시 사용합니다.",
+    );
+    await loadAccounts();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '사용 상태를 변경하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : "사용 상태를 변경하지 못했습니다.";
   }
 }
 
 async function deleteAccount() {
-  const accountId = editingAccountId.value
-  if (accountId === null) return
+  const accountId = editingAccountId.value;
+  if (accountId === null) return;
   if (
     !window.confirm(
       `'${accountForm.value.accountName}' 계좌와 등록된 메모·거래 내역을 모두 삭제할까요?`,
     )
   )
-    return
+    return;
   try {
-    await investmentMasterApi.deleteAccount(accountId)
-    closeAccountForm()
-    setNotice('계좌가 삭제되었습니다.')
-    if (accounts.value.length === 1 && accountPage.value > 0) accountPage.value -= 1
-    await loadAccounts()
-    await loadBrokerages()
+    await investmentMasterApi.deleteAccount(accountId);
+    closeAccountForm();
+    setNotice("계좌가 삭제되었습니다.");
+    if (accounts.value.length === 1 && accountPage.value > 0)
+      accountPage.value -= 1;
+    await loadAccounts();
+    await loadBrokerages();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : '계좌를 삭제하지 못했습니다.'
+    errorMessage.value =
+      error instanceof Error ? error.message : "계좌를 삭제하지 못했습니다.";
   }
 }
 
 async function loadAccountMemos(accountId = editingAccountId.value) {
-  if (accountId === null) return
-  loadingMemos.value = true
-  memoHistoryErrorMessage.value = ''
+  if (accountId === null) return;
+  loadingMemos.value = true;
+  memoHistoryErrorMessage.value = "";
   try {
-    const memos = await investmentMasterApi.getAccountMemos(accountId)
-    if (editingAccountId.value === accountId) accountMemos.value = memos
+    const memos = await investmentMasterApi.getAccountMemos(accountId);
+    if (editingAccountId.value === accountId) accountMemos.value = memos;
   } catch (error) {
     if (editingAccountId.value === accountId) {
       memoHistoryErrorMessage.value =
-        error instanceof Error ? error.message : '메모 이력을 불러오지 못했습니다.'
+        error instanceof Error
+          ? error.message
+          : "메모 이력을 불러오지 못했습니다.";
     }
   } finally {
-    loadingMemos.value = false
+    loadingMemos.value = false;
   }
 }
 
 async function deleteAccountMemo(memo: AccountMemo) {
-  const accountId = editingAccountId.value
-  if (accountId === null) return
-  if (!window.confirm('이 메모를 삭제할까요?')) return
+  const accountId = editingAccountId.value;
+  if (accountId === null) return;
+  if (!window.confirm("이 메모를 삭제할까요?")) return;
   try {
-    await investmentMasterApi.deleteAccountMemo(accountId, memo.memoId)
-    setNotice('메모가 삭제되었습니다.')
-    await Promise.all([loadAccountMemos(accountId), loadAccounts()])
+    await investmentMasterApi.deleteAccountMemo(accountId, memo.memoId);
+    setNotice("메모가 삭제되었습니다.");
+    await Promise.all([loadAccountMemos(accountId), loadAccounts()]);
   } catch (error) {
     memoHistoryErrorMessage.value =
-      error instanceof Error ? error.message : '메모를 삭제하지 못했습니다.'
+      error instanceof Error ? error.message : "메모를 삭제하지 못했습니다.";
   }
 }
 
 async function saveAccountMemo() {
-  const content = memoContent.value.trim()
+  const content = memoContent.value.trim();
   if (!content) {
-    memoErrorMessage.value = '메모를 입력해 주세요.'
-    return
+    memoErrorMessage.value = "메모를 입력해 주세요.";
+    return;
   }
-  const accountId = editingAccountId.value
+  const accountId = editingAccountId.value;
   if (editingMemoId.value !== null && accountId !== null) {
     try {
-      await investmentMasterApi.updateAccountMemo(accountId, editingMemoId.value, {
-        memoContent: content,
-      })
-      closeMemoForm()
-      setNotice('메모가 수정되었습니다.')
-      await Promise.all([loadAccountMemos(accountId), loadAccounts()])
+      await investmentMasterApi.updateAccountMemo(
+        accountId,
+        editingMemoId.value,
+        {
+          memoContent: content,
+        },
+      );
+      closeMemoForm();
+      setNotice("메모가 수정되었습니다.");
+      await Promise.all([loadAccountMemos(accountId), loadAccounts()]);
     } catch (error) {
       memoErrorMessage.value =
-        error instanceof Error ? error.message : '메모를 수정하지 못했습니다.'
+        error instanceof Error ? error.message : "메모를 수정하지 못했습니다.";
     }
-    return
+    return;
   }
-  pendingMemoContent.value = content
-  closeMemoForm()
+  pendingMemoContent.value = content;
+  closeMemoForm();
 }
 
 function formatMemoDate(value: string) {
-  return new Date(value).toLocaleString('ko-KR')
+  return new Date(value).toLocaleString("ko-KR");
 }
 
 async function changeBrokeragePage(next: number) {
-  if (next < 0 || next >= brokeragePages.value) return
-  brokeragePage.value = next
-  await loadBrokerages(false)
+  if (next < 0 || next >= brokeragePages.value) return;
+  brokeragePage.value = next;
+  await loadBrokerages(false);
 }
 
 async function onAccountPage(event: { page: number }) {
-  if (event.page === accountPage.value) return
-  accountPage.value = event.page
-  await loadAccounts()
+  if (event.page === accountPage.value) return;
+  accountPage.value = event.page;
+  await loadAccounts();
 }
 
-onMounted(() => loadBrokerages(false))
+onMounted(() => loadBrokerages(false));
 </script>
 
 <template>
@@ -441,7 +508,10 @@ onMounted(() => loadBrokerages(false))
           <span>거래 기록에 사용할 증권사와 투자 계좌를 관리합니다.</span>
         </div>
       </section>
-      <div v-if="errorMessage && !showBrokerageForm && !showAccountForm" class="alert">
+      <div
+        v-if="errorMessage && !showBrokerageForm && !showAccountForm"
+        class="alert"
+      >
         <i class="pi pi-exclamation-circle"></i>{{ errorMessage }}
       </div>
       <div v-if="noticeMessage" class="toast">
@@ -480,8 +550,11 @@ onMounted(() => loadBrokerages(false))
               <i class="pi pi-spin pi-spinner"></i>불러오는 중
             </div>
             <div v-else-if="brokerages.length === 0" class="empty">
-              <i class="pi pi-building"></i><strong>등록된 증권사가 없습니다</strong
-              ><button type="button" @click="openBrokerageCreate">첫 증권사 등록</button>
+              <i class="pi pi-building"></i
+              ><strong>등록된 증권사가 없습니다</strong
+              ><button type="button" @click="openBrokerageCreate">
+                첫 증권사 등록
+              </button>
             </div>
             <button
               v-for="item in brokerages"
@@ -492,17 +565,24 @@ onMounted(() => loadBrokerages(false))
               type="button"
               @click="selectBrokerage(item.brokerageId)"
             >
-              <span class="company-icon"><i class="pi pi-building-columns"></i></span
+              <span class="company-icon"
+                ><i class="pi pi-building-columns"></i></span
               ><span class="company-copy"
                 ><strong>{{ item.brokerageName }}</strong
                 ><small>등록 계좌 {{ item.accountCount }}개</small></span
               ><span class="status" :class="{ off: !item.useYn }">{{
-                item.useYn ? '사용 중' : '중지'
+                item.useYn ? "사용 중" : "중지"
               }}</span
               ><span class="item-actions"
-                ><i class="pi pi-pencil" title="수정" @click.stop="openBrokerageEdit(item)"></i
                 ><i
-                  :class="item.useYn ? 'pi pi-pause-circle' : 'pi pi-play-circle'"
+                  class="pi pi-pencil"
+                  title="수정"
+                  @click.stop="openBrokerageEdit(item)"
+                ></i
+                ><i
+                  :class="
+                    item.useYn ? 'pi pi-pause-circle' : 'pi pi-play-circle'
+                  "
                   title="상태 변경"
                   @click.stop="toggleBrokerage(item)"
                 ></i
@@ -510,7 +590,10 @@ onMounted(() => loadBrokerages(false))
             </button>
           </div>
           <nav v-if="brokeragePages > 1" class="pager">
-            <button :disabled="brokeragePage === 0" @click="changeBrokeragePage(brokeragePage - 1)">
+            <button
+              :disabled="brokeragePage === 0"
+              @click="changeBrokeragePage(brokeragePage - 1)"
+            >
               <i class="pi pi-chevron-left"></i></button
             ><span>{{ brokeragePage + 1 }} / {{ brokeragePages }}</span
             ><button
@@ -525,7 +608,7 @@ onMounted(() => loadBrokerages(false))
         <section class="panel account-panel">
           <header>
             <div>
-              <p>{{ selectedBrokerage?.brokerageName || '증권사 선택' }}</p>
+              <p>{{ selectedBrokerage?.brokerageName || "증권사 선택" }}</p>
               <h2>투자 계좌</h2>
             </div>
             <button
@@ -537,7 +620,10 @@ onMounted(() => loadBrokerages(false))
               <i class="pi pi-plus"></i> 계좌 등록
             </button>
           </header>
-          <form class="search-row account-search" @submit.prevent="searchAccounts">
+          <form
+            class="search-row account-search"
+            @submit.prevent="searchAccounts"
+          >
             <div class="search-box">
               <i class="pi pi-search"></i
               ><input
@@ -581,7 +667,7 @@ onMounted(() => loadBrokerages(false))
                     title="계좌 상세 조회"
                     @click="openAccountView(data)"
                   >
-                    <i class="pi pi-search"></i>{{ data.accountNumber || '—' }}
+                    <i class="pi pi-search"></i>{{ data.accountNumber || "—" }}
                   </button></template
                 ></Column
               >
@@ -590,28 +676,46 @@ onMounted(() => loadBrokerages(false))
                 header="계좌 별칭"
                 :style="{ width: '10rem', minWidth: '10rem' }"
                 ><template #body="{ data }"
-                  ><strong class="account-name">{{ data.accountName }}</strong></template
+                  ><strong class="account-name">{{
+                    data.accountName
+                  }}</strong></template
                 ></Column
               >
               <Column field="latestMemoContent" header="메모"
                 ><template #body="{ data }"
-                  ><span class="memo">{{ data.latestMemoContent || '—' }}</span></template
+                  ><span class="memo">{{
+                    data.latestMemoContent || "—"
+                  }}</span></template
                 ></Column
               >
               <Column field="useYn" header="상태"
                 ><template #body="{ data }"
                   ><span class="status" :class="{ off: !data.useYn }">{{
-                    data.useYn ? '사용 중' : '중지'
+                    data.useYn ? "사용 중" : "중지"
                   }}</span></template
                 ></Column
               >
               <Column header="관리"
                 ><template #body="{ data }"
                   ><div class="row-actions">
-                    <button type="button" title="수정" @click="openAccountEdit(data)">
+                    <button
+                      type="button"
+                      title="수정"
+                      @click="openAccountEdit(data)"
+                    >
                       <i class="pi pi-pencil"></i></button
-                    ><button type="button" title="상태 변경" @click="toggleAccount(data)">
-                      <i :class="data.useYn ? 'pi pi-pause-circle' : 'pi pi-play-circle'"></i>
+                    ><button
+                      type="button"
+                      title="상태 변경"
+                      @click="toggleAccount(data)"
+                    >
+                      <i
+                        :class="
+                          data.useYn
+                            ? 'pi pi-pause-circle'
+                            : 'pi pi-play-circle'
+                        "
+                      ></i>
                     </button></div></template
               ></Column>
               <template #empty
@@ -620,8 +724,11 @@ onMounted(() => loadBrokerages(false))
                     ><i class="pi pi-arrow-left"></i
                     ><strong>증권사를 선택해 주세요</strong></template
                   ><template v-else
-                    ><i class="pi pi-wallet"></i><strong>등록된 계좌가 없습니다</strong
-                    ><span>선택한 증권사의 거래 계좌를 등록하세요.</span></template
+                    ><i class="pi pi-wallet"></i
+                    ><strong>등록된 계좌가 없습니다</strong
+                    ><span
+                      >선택한 증권사의 거래 계좌를 등록하세요.</span
+                    ></template
                   >
                 </div></template
               >
@@ -631,18 +738,26 @@ onMounted(() => loadBrokerages(false))
       </div>
     </main>
 
-    <div v-if="showBrokerageForm" class="modal-backdrop" @click.self="showBrokerageForm = false">
+    <div
+      v-if="showBrokerageForm"
+      class="modal-backdrop"
+      @click.self="showBrokerageForm = false"
+    >
       <section class="modal" role="dialog" aria-modal="true">
         <header>
           <div>
             <p>COMPANY</p>
-            <h2>{{ editingBrokerageId === null ? '증권사 등록' : '증권사 수정' }}</h2>
+            <h2>
+              {{ editingBrokerageId === null ? "증권사 등록" : "증권사 수정" }}
+            </h2>
           </div>
-          <button @click="showBrokerageForm = false"><i class="pi pi-times"></i></button>
+          <button @click="showBrokerageForm = false">
+            <i class="pi pi-times"></i>
+          </button>
         </header>
         <form @submit.prevent="saveBrokerage">
           <label
-            ><span>증권사명 <b>*</b></span
+            ><span class="required-label"><b>*</b> 증권사명</span
             ><input
               v-model="brokerageForm.brokerageName"
               maxlength="100"
@@ -658,27 +773,37 @@ onMounted(() => loadBrokerages(false))
             <i class="pi pi-exclamation-circle"></i>{{ errorMessage }}
           </div>
           <footer>
-            <button type="button" class="secondary" @click="showBrokerageForm = false">취소</button
+            <button
+              type="button"
+              class="secondary"
+              @click="showBrokerageForm = false"
+            >
+              취소</button
             ><button class="primary" :disabled="saving">
-              <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i> 저장
+              <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
+              저장
             </button>
           </footer>
         </form>
       </section>
     </div>
 
-    <div v-if="showAccountForm" class="modal-backdrop" @click.self="closeAccountForm">
+    <div
+      v-if="showAccountForm"
+      class="modal-backdrop"
+      @click.self="closeAccountForm"
+    >
       <section class="modal account-modal" role="dialog" aria-modal="true">
         <header>
           <div>
             <p>INVESTMENT ACCOUNT</p>
             <h2>
               {{
-                accountFormMode === 'create'
-                  ? '계좌 등록'
-                  : accountFormMode === 'edit'
-                    ? '계좌 수정'
-                    : '계좌 상세'
+                accountFormMode === "create"
+                  ? "계좌 등록"
+                  : accountFormMode === "edit"
+                    ? "계좌 수정"
+                    : "계좌 상세"
               }}
             </h2>
           </div>
@@ -686,7 +811,7 @@ onMounted(() => loadBrokerages(false))
         </header>
         <form @submit.prevent="saveAccount">
           <label
-            ><span>증권사 <b>*</b></span
+            ><span class="required-label"><b>*</b> 증권사</span
             ><select
               v-model="accountForm.brokerageId"
               :disabled="accountFormMode === 'view'"
@@ -701,7 +826,7 @@ onMounted(() => loadBrokerages(false))
               </option>
             </select></label
           ><label
-            ><span>계좌 별칭 <b>*</b></span
+            ><span class="required-label"><b>*</b> 계좌 별칭</span
             ><input
               v-model="accountForm.accountName"
               :disabled="accountFormMode === 'view'"
@@ -734,19 +859,32 @@ onMounted(() => loadBrokerages(false))
               <button type="button" class="danger" @click="deleteAccount">
                 <i class="pi pi-trash"></i> 삭제
               </button>
-              <button type="button" class="secondary" @click="closeAccountForm">닫기</button>
-              <button type="button" class="primary" @click="accountFormMode = 'edit'">
+              <button type="button" class="secondary" @click="closeAccountForm">
+                닫기
+              </button>
+              <button
+                type="button"
+                class="primary"
+                @click="accountFormMode = 'edit'"
+              >
                 <i class="pi pi-pencil"></i> 수정
               </button>
             </template>
             <template v-else>
               <button type="button" class="secondary" @click="openMemoForm">
-                <i :class="pendingMemoContent ? 'pi pi-pencil' : 'pi pi-plus'"></i>
-                {{ pendingMemoContent ? '새 메모 수정' : '새 메모 추가' }}
+                <i
+                  :class="pendingMemoContent ? 'pi pi-pencil' : 'pi pi-plus'"
+                ></i>
+                {{ pendingMemoContent ? "새 메모 수정" : "새 메모 추가" }}
               </button>
-              <button type="button" class="secondary" @click="closeAccountForm">취소</button>
+              <button type="button" class="secondary" @click="closeAccountForm">
+                취소
+              </button>
               <button class="primary" :disabled="saving">
-                <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i> 저장
+                <i
+                  :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+                ></i>
+                저장
               </button>
             </template>
           </footer>
@@ -794,7 +932,11 @@ onMounted(() => loadBrokerages(false))
       </section>
     </div>
 
-    <div v-if="showMemoForm" class="modal-backdrop memo-modal-backdrop" @click.self="closeMemoForm">
+    <div
+      v-if="showMemoForm"
+      class="modal-backdrop memo-modal-backdrop"
+      @click.self="closeMemoForm"
+    >
       <section
         class="modal memo-modal"
         role="dialog"
@@ -805,16 +947,20 @@ onMounted(() => loadBrokerages(false))
           <div>
             <p>ACCOUNT MEMO</p>
             <h2 id="memo-form-title">
-              {{ editingMemoId === null ? '새 메모 추가' : '메모 수정' }}
+              {{ editingMemoId === null ? "새 메모 추가" : "메모 수정" }}
             </h2>
           </div>
-          <button type="button" aria-label="메모 작성 닫기" @click="closeMemoForm">
+          <button
+            type="button"
+            aria-label="메모 작성 닫기"
+            @click="closeMemoForm"
+          >
             <i class="pi pi-times"></i>
           </button>
         </header>
         <form @submit.prevent="saveAccountMemo">
           <label
-            ><span>메모 <b>*</b></span
+            ><span class="required-label"><b>*</b> 메모</span
             ><textarea
               v-model="memoContent"
               rows="6"
@@ -827,9 +973,11 @@ onMounted(() => loadBrokerages(false))
             <i class="pi pi-exclamation-circle"></i>{{ memoErrorMessage }}
           </div>
           <footer>
-            <button type="button" class="secondary" @click="closeMemoForm">취소</button
+            <button type="button" class="secondary" @click="closeMemoForm">
+              취소</button
             ><button class="primary">
-              <i class="pi pi-check"></i> {{ editingMemoId === null ? '등록' : '저장' }}
+              <i class="pi pi-check"></i>
+              {{ editingMemoId === null ? "등록" : "저장" }}
             </button>
           </footer>
         </form>
@@ -1033,7 +1181,7 @@ button {
   width: 100%;
   display: grid;
   grid-template-columns: 38px 1fr auto;
-  grid-template-areas: 'icon copy status' 'icon actions actions';
+  grid-template-areas: "icon copy status" "icon actions actions";
   gap: 3px 11px;
   padding: 13px;
   border: 1px solid transparent;
