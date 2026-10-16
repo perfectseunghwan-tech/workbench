@@ -338,7 +338,12 @@ async function toggleAccount(item: ManagedAccount) {
 async function deleteAccount() {
   const accountId = editingAccountId.value
   if (accountId === null) return
-  if (!window.confirm(`'${accountForm.value.accountName}' 계좌와 등록된 메모·거래 내역을 모두 삭제할까요?`)) return
+  if (
+    !window.confirm(
+      `'${accountForm.value.accountName}' 계좌와 등록된 메모·거래 내역을 모두 삭제할까요?`,
+    )
+  )
+    return
   try {
     await investmentMasterApi.deleteAccount(accountId)
     closeAccountForm()
@@ -377,7 +382,8 @@ async function deleteAccountMemo(memo: AccountMemo) {
     setNotice('메모가 삭제되었습니다.')
     await Promise.all([loadAccountMemos(accountId), loadAccounts()])
   } catch (error) {
-    memoHistoryErrorMessage.value = error instanceof Error ? error.message : '메모를 삭제하지 못했습니다.'
+    memoHistoryErrorMessage.value =
+      error instanceof Error ? error.message : '메모를 삭제하지 못했습니다.'
   }
 }
 
@@ -390,12 +396,15 @@ async function saveAccountMemo() {
   const accountId = editingAccountId.value
   if (editingMemoId.value !== null && accountId !== null) {
     try {
-      await investmentMasterApi.updateAccountMemo(accountId, editingMemoId.value, { memoContent: content })
+      await investmentMasterApi.updateAccountMemo(accountId, editingMemoId.value, {
+        memoContent: content,
+      })
       closeMemoForm()
       setNotice('메모가 수정되었습니다.')
       await Promise.all([loadAccountMemos(accountId), loadAccounts()])
     } catch (error) {
-      memoErrorMessage.value = error instanceof Error ? error.message : '메모를 수정하지 못했습니다.'
+      memoErrorMessage.value =
+        error instanceof Error ? error.message : '메모를 수정하지 못했습니다.'
     }
     return
   }
@@ -576,7 +585,10 @@ onMounted(() => loadBrokerages(false))
                   </button></template
                 ></Column
               >
-              <Column field="accountName" header="계좌 별칭" :style="{ width: '10rem', minWidth: '10rem' }"
+              <Column
+                field="accountName"
+                header="계좌 별칭"
+                :style="{ width: '10rem', minWidth: '10rem' }"
                 ><template #body="{ data }"
                   ><strong class="account-name">{{ data.accountName }}</strong></template
                 ></Column
@@ -660,14 +672,26 @@ onMounted(() => loadBrokerages(false))
         <header>
           <div>
             <p>INVESTMENT ACCOUNT</p>
-            <h2>{{ accountFormMode === 'create' ? '계좌 등록' : accountFormMode === 'edit' ? '계좌 수정' : '계좌 상세' }}</h2>
+            <h2>
+              {{
+                accountFormMode === 'create'
+                  ? '계좌 등록'
+                  : accountFormMode === 'edit'
+                    ? '계좌 수정'
+                    : '계좌 상세'
+              }}
+            </h2>
           </div>
           <button @click="closeAccountForm"><i class="pi pi-times"></i></button>
         </header>
         <form @submit.prevent="saveAccount">
           <label
             ><span>증권사 <b>*</b></span
-            ><select v-model="accountForm.brokerageId" :disabled="accountFormMode === 'view'" required>
+            ><select
+              v-model="accountForm.brokerageId"
+              :disabled="accountFormMode === 'view'"
+              required
+            >
               <option
                 v-for="item in activeBrokerages"
                 :key="item.brokerageId"
@@ -692,7 +716,11 @@ onMounted(() => loadBrokerages(false))
               maxlength="100"
               placeholder="선택 입력" /></label
           ><label class="check"
-            ><input v-model="accountForm.useYn" :disabled="accountFormMode === 'view'" type="checkbox" /><span>사용 중인 계좌</span></label
+            ><input
+              v-model="accountForm.useYn"
+              :disabled="accountFormMode === 'view'"
+              type="checkbox"
+            /><span>사용 중인 계좌</span></label
           >
           <div v-if="errorMessage" class="alert">
             <i class="pi pi-exclamation-circle"></i>{{ errorMessage }}
@@ -725,16 +753,38 @@ onMounted(() => loadBrokerages(false))
         </form>
         <section class="memo-section">
           <div class="memo-history">
-            <div v-if="editingAccountId === null" class="memo-empty">계좌 저장 후 메모 이력이 표시됩니다.</div>
-            <div v-else-if="loadingMemos" class="memo-empty"><i class="pi pi-spin pi-spinner"></i> 불러오는 중</div>
-            <div v-else-if="memoHistoryErrorMessage" class="memo-empty">{{ memoHistoryErrorMessage }}</div>
-            <div v-else-if="accountMemos.length === 0" class="memo-empty">등록된 메모가 없습니다.</div>
+            <div v-if="editingAccountId === null" class="memo-empty">
+              계좌 저장 후 메모 이력이 표시됩니다.
+            </div>
+            <div v-else-if="loadingMemos" class="memo-empty">
+              <i class="pi pi-spin pi-spinner"></i> 불러오는 중
+            </div>
+            <div v-else-if="memoHistoryErrorMessage" class="memo-empty">
+              {{ memoHistoryErrorMessage }}
+            </div>
+            <div v-else-if="accountMemos.length === 0" class="memo-empty">
+              등록된 메모가 없습니다.
+            </div>
             <article v-for="memo in accountMemos" v-else :key="memo.memoId">
               <div class="memo-item-meta">
                 <time>{{ formatMemoDate(memo.createdAt) }}</time>
                 <div class="memo-actions">
-                  <button type="button" class="memo-edit" title="메모 수정" @click="openMemoEdit(memo)"><i class="pi pi-pencil"></i></button>
-                  <button type="button" class="memo-delete" title="메모 삭제" @click="deleteAccountMemo(memo)"><i class="pi pi-trash"></i></button>
+                  <button
+                    type="button"
+                    class="memo-edit"
+                    title="메모 수정"
+                    @click="openMemoEdit(memo)"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="memo-delete"
+                    title="메모 삭제"
+                    @click="deleteAccountMemo(memo)"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
                 </div>
               </div>
               <p>{{ memo.memoContent }}</p>
@@ -754,7 +804,9 @@ onMounted(() => loadBrokerages(false))
         <header>
           <div>
             <p>ACCOUNT MEMO</p>
-            <h2 id="memo-form-title">{{ editingMemoId === null ? '새 메모 추가' : '메모 수정' }}</h2>
+            <h2 id="memo-form-title">
+              {{ editingMemoId === null ? '새 메모 추가' : '메모 수정' }}
+            </h2>
           </div>
           <button type="button" aria-label="메모 작성 닫기" @click="closeMemoForm">
             <i class="pi pi-times"></i>

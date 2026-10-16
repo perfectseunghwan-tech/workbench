@@ -2,6 +2,7 @@
   "name": "workbench",
   "private": true,
   "scripts": {
-    "local": "npm --prefix frontend run local"
+    "local": "npm --prefix frontend run local",
+    "format": "npm --prefix frontend run format"
   }
 }

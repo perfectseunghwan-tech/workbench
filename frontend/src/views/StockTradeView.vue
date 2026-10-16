@@ -353,29 +353,51 @@ onMounted(async () => {
         </div>
         <div class="summary-area">
           <div class="period-selector" role="group" aria-label="요약 기간 선택">
-            <button type="button" :class="{ active: selectedSummaryPeriod === 'today' }" @click="selectSummaryPeriod('today')">오늘</button>
-            <button type="button" :class="{ active: selectedSummaryPeriod === 'month' }" @click="selectSummaryPeriod('month')">이번달</button>
-            <button type="button" :class="{ active: selectedSummaryPeriod === 'year' }" @click="selectSummaryPeriod('year')">올해</button>
+            <button
+              type="button"
+              :class="{ active: selectedSummaryPeriod === 'today' }"
+              @click="selectSummaryPeriod('today')"
+            >
+              오늘
+            </button>
+            <button
+              type="button"
+              :class="{ active: selectedSummaryPeriod === 'month' }"
+              @click="selectSummaryPeriod('month')"
+            >
+              이번달
+            </button>
+            <button
+              type="button"
+              :class="{ active: selectedSummaryPeriod === 'year' }"
+              @click="selectSummaryPeriod('year')"
+            >
+              올해
+            </button>
           </div>
           <div class="summary-grid" aria-label="거래 요약">
-          <article>
-            <span>전체 거래</span><strong>{{ formatNumber(totalElements, 0) }}</strong
-            ><small>건</small>
-          </article>
-          <article class="buy">
-            <span>현재 페이지 매수</span><strong>{{ formatNumber(currentBuyAmount) }}</strong
-            ><small>원</small>
-          </article>
-          <article class="sell">
-            <span>현재 페이지 매도</span><strong>{{ formatNumber(currentSellAmount) }}</strong
-            ><small>원</small>
-          </article>
-          <article class="realized">
-            <span>현재 페이지 실현손익</span><strong
-              :class="{ profit: currentRealizedProfitLoss > 0, loss: currentRealizedProfitLoss < 0 }"
-              >{{ formatNumber(currentRealizedProfitLoss) }}</strong
-            ><small>원</small>
-          </article>
+            <article>
+              <span>전체 거래</span><strong>{{ formatNumber(totalElements, 0) }}</strong
+              ><small>건</small>
+            </article>
+            <article class="buy">
+              <span>현재 페이지 매수</span><strong>{{ formatNumber(currentBuyAmount) }}</strong
+              ><small>원</small>
+            </article>
+            <article class="sell">
+              <span>현재 페이지 매도</span><strong>{{ formatNumber(currentSellAmount) }}</strong
+              ><small>원</small>
+            </article>
+            <article class="realized">
+              <span>현재 페이지 실현손익</span
+              ><strong
+                :class="{
+                  profit: currentRealizedProfitLoss > 0,
+                  loss: currentRealizedProfitLoss < 0,
+                }"
+                >{{ formatNumber(currentRealizedProfitLoss) }}</strong
+              ><small>원</small>
+            </article>
           </div>
         </div>
       </section>
@@ -388,8 +410,14 @@ onMounted(async () => {
           </button>
         </div>
         <form class="filter-grid" @submit.prevent="search">
-          <label><span>시작일</span><input v-model="filters.dateFrom" type="date" @change="selectedSummaryPeriod = null" /></label>
-          <label><span>종료일</span><input v-model="filters.dateTo" type="date" @change="selectedSummaryPeriod = null" /></label>
+          <label
+            ><span>시작일</span
+            ><input v-model="filters.dateFrom" type="date" @change="selectedSummaryPeriod = null"
+          /></label>
+          <label
+            ><span>종료일</span
+            ><input v-model="filters.dateTo" type="date" @change="selectedSummaryPeriod = null"
+          /></label>
           <label
             ><span>증권사</span
             ><select v-model="filters.brokerageId" @change="onFilterBrokerageChange">

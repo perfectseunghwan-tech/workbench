@@ -54,7 +54,9 @@ export interface AccountMemoPayload {
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
-    headers: options?.body ? { 'Content-Type': 'application/json', ...options.headers } : options?.headers,
+    headers: options?.body
+      ? { 'Content-Type': 'application/json', ...options.headers }
+      : options?.headers,
   })
   if (!response.ok) {
     let message = `요청 처리에 실패했습니다. (${response.status})`
@@ -76,17 +78,20 @@ export const investmentMasterApi = {
   },
   createBrokerage(payload: BrokeragePayload) {
     return request<ManagedBrokerage>('/api/master/brokerages', {
-      method: 'POST', body: JSON.stringify(payload),
+      method: 'POST',
+      body: JSON.stringify(payload),
     })
   },
   updateBrokerage(id: number, payload: BrokeragePayload) {
     return request<ManagedBrokerage>(`/api/master/brokerages/${id}`, {
-      method: 'PUT', body: JSON.stringify(payload),
+      method: 'PUT',
+      body: JSON.stringify(payload),
     })
   },
   updateBrokerageUsage(id: number, useYn: boolean) {
     return request<ManagedBrokerage>(`/api/master/brokerages/${id}/usage`, {
-      method: 'PATCH', body: JSON.stringify({ useYn }),
+      method: 'PATCH',
+      body: JSON.stringify({ useYn }),
     })
   },
   getAccounts(params: URLSearchParams) {
@@ -97,12 +102,14 @@ export const investmentMasterApi = {
   },
   createAccount(payload: AccountPayload) {
     return request<ManagedAccount>('/api/master/investment-accounts', {
-      method: 'POST', body: JSON.stringify(payload),
+      method: 'POST',
+      body: JSON.stringify(payload),
     })
   },
   updateAccount(id: number, payload: AccountPayload) {
     return request<ManagedAccount>(`/api/master/investment-accounts/${id}`, {
-      method: 'PUT', body: JSON.stringify(payload),
+      method: 'PUT',
+      body: JSON.stringify(payload),
     })
   },
   deleteAccount(id: number) {
@@ -110,7 +117,8 @@ export const investmentMasterApi = {
   },
   updateAccountUsage(id: number, useYn: boolean) {
     return request<ManagedAccount>(`/api/master/investment-accounts/${id}/usage`, {
-      method: 'PATCH', body: JSON.stringify({ useYn }),
+      method: 'PATCH',
+      body: JSON.stringify({ useYn }),
     })
   },
   getAccountMemos(accountId: number) {
@@ -118,7 +126,8 @@ export const investmentMasterApi = {
   },
   createAccountMemo(accountId: number, payload: AccountMemoPayload) {
     return request<AccountMemo>(`/api/master/investment-accounts/${accountId}/memos`, {
-      method: 'POST', body: JSON.stringify(payload),
+      method: 'POST',
+      body: JSON.stringify(payload),
     })
   },
   updateAccountMemo(accountId: number, memoId: number, payload: AccountMemoPayload) {

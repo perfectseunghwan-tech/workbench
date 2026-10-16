@@ -5,11 +5,14 @@ const state = ref<'loading' | 'success' | 'error'>('loading')
 const message = ref('백엔드 서버의 응답을 기다리고 있습니다.')
 const checkedAt = ref('')
 let controller: AbortController | undefined
-const title = computed(() => ({
-  loading: '서버 연결 확인 중',
-  success: '연결 성공',
-  error: '서버에 연결할 수 없습니다',
-})[state.value])
+const title = computed(
+  () =>
+    ({
+      loading: '서버 연결 확인 중',
+      success: '연결 성공',
+      error: '서버에 연결할 수 없습니다',
+    })[state.value],
+)
 
 async function checkConnection() {
   controller?.abort()
@@ -52,9 +55,18 @@ onBeforeUnmount(() => controller?.abort())
         <p class="description">{{ message }}</p>
       </div>
       <dl>
-        <div><dt>연결 경로</dt><dd>Frontend → Backend</dd></div>
-        <div><dt>API</dt><dd>/api/connection</dd></div>
-        <div><dt>마지막 확인</dt><dd>{{ checkedAt || '확인 중' }}</dd></div>
+        <div>
+          <dt>연결 경로</dt>
+          <dd>Frontend → Backend</dd>
+        </div>
+        <div>
+          <dt>API</dt>
+          <dd>/api/connection</dd>
+        </div>
+        <div>
+          <dt>마지막 확인</dt>
+          <dd>{{ checkedAt || '확인 중' }}</dd>
+        </div>
       </dl>
       <button :disabled="state === 'loading'" @click="checkConnection">
         {{ state === 'loading' ? '연결 확인 중…' : '다시 확인하기' }}

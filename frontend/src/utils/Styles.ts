@@ -62,8 +62,7 @@ export const dataTableStyles = {
   table: { class: 'w-full border-collapse text-sm' },
   headerRow: { class: 'bg-blue-50 text-blue-950' },
   headerCell: {
-    class:
-      'h-12 border-b border-blue-100 px-4 text-center text-xs font-bold text-blue-950',
+    class: 'h-12 border-b border-blue-100 px-4 text-center text-xs font-bold text-blue-950',
   },
   bodyCell: { class: 'border-b border-slate-100 px-4 py-3 text-slate-700' },
 } as const

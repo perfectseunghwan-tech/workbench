@@ -67,7 +67,9 @@ export interface TradePage {
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
-    headers: options?.body ? { 'Content-Type': 'application/json', ...options.headers } : options?.headers,
+    headers: options?.body
+      ? { 'Content-Type': 'application/json', ...options.headers }
+      : options?.headers,
   })
 
   if (!response.ok) {
