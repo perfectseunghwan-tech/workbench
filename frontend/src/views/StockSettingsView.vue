@@ -24,6 +24,12 @@ const filters = ref({
 })
 const showForm = ref(false),
   editingId = ref<number | null>(null)
+const marketOptions = [
+  { value: 'KOSPI', label: '코스피' },
+  { value: 'KOSDAQ', label: '코스닥' },
+  { value: 'S&P', label: 'S&P' },
+  { value: 'NASDAQ', label: '나스닥' },
+]
 const form = ref<StockPayload>({
   stockCode: '',
   stockName: '',
@@ -256,7 +262,13 @@ onMounted(load)
           ><label
             ><span class="required-label"><b>*</b> 종목명</span
             ><input v-model="form.stockName" maxlength="200" required /></label
-          ><label>시장코드<input v-model="form.marketCode" maxlength="30" /></label
+          ><label
+            >시장코드<select v-model="form.marketCode">
+              <option :value="null">시장 선택</option>
+              <option v-for="market in marketOptions" :key="market.value" :value="market.value">
+                {{ market.label }}
+              </option>
+            </select></label
           ><label
             ><span class="required-label"><b>*</b> 통화코드</span
             ><input v-model="form.currencyCode" maxlength="10" required /></label
