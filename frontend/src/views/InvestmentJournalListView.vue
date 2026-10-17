@@ -1,58 +1,66 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import { investmentJournalApi, type JournalSummary } from '../services/investmentJournalApi'
-const router = useRouter()
-const rows = ref<JournalSummary[]>([])
-const from = ref('')
-const to = ref('')
-const keyword = ref('')
-const page = ref(0)
-const total = ref(0)
-const loading = ref(false)
-const error = ref('')
-const dateTime = (v: string) => new Date(v).toLocaleString('ko-KR')
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import {
+  investmentJournalApi,
+  type JournalSummary,
+} from "../services/investmentJournalApi";
+const router = useRouter();
+const rows = ref<JournalSummary[]>([]);
+const from = ref("");
+const to = ref("");
+const keyword = ref("");
+const page = ref(0);
+const total = ref(0);
+const loading = ref(false);
+const error = ref("");
+const dateTime = (v: string) => new Date(v).toLocaleString("ko-KR");
 async function load() {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
   try {
-    const p = new URLSearchParams({ page: String(page.value), size: '20' })
-    if (from.value) p.set('dateFrom', from.value)
-    if (to.value) p.set('dateTo', to.value)
-    if (keyword.value.trim()) p.set('keyword', keyword.value.trim())
-    const r = await investmentJournalApi.getJournals(p)
-    rows.value = r.content
-    total.value = r.totalElements
+    const p = new URLSearchParams({ page: String(page.value), size: "20" });
+    if (from.value) p.set("dateFrom", from.value);
+    if (to.value) p.set("dateTo", to.value);
+    if (keyword.value.trim()) p.set("keyword", keyword.value.trim());
+    const r = await investmentJournalApi.getJournals(p);
+    rows.value = r.content;
+    total.value = r.totalElements;
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '목록을 불러오지 못했습니다.'
+    error.value =
+      e instanceof Error ? e.message : "목록을 불러오지 못했습니다.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 function search() {
-  page.value = 0
-  load()
+  page.value = 0;
+  load();
 }
 function reset() {
-  from.value = ''
-  to.value = ''
-  keyword.value = ''
-  search()
+  from.value = "";
+  to.value = "";
+  keyword.value = "";
+  search();
 }
 async function remove(row: JournalSummary) {
-  if (!confirm(`${row.journalDate} · ${row.journalTitle || '제목 없음'} 일지를 삭제하시겠습니까?`))
-    return
+  if (
+    !confirm(
+      `${row.journalDate} · ${row.journalTitle || "제목 없음"} 일지를 삭제하시겠습니까?`,
+    )
+  )
+    return;
   try {
-    await investmentJournalApi.deleteJournal(row.journalId)
-    if (rows.value.length === 1 && page.value > 0) page.value--
-    await load()
+    await investmentJournalApi.deleteJournal(row.journalId);
+    if (rows.value.length === 1 && page.value > 0) page.value--;
+    await load();
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '삭제하지 못했습니다.'
+    error.value = e instanceof Error ? e.message : "삭제하지 못했습니다.";
   }
 }
-onMounted(load)
+onMounted(load);
 </script>
 <template>
   <div class="journal-page">
@@ -90,21 +98,28 @@ onMounted(load)
         :total-records="total"
         :first="page * 20"
         @page="
-          page = $event.page
-          load()
+          page = $event.page;
+          load();
         "
         @row-click="router.push(`/journals/${$event.data.journalId}`)"
         table-style="min-width: 800px"
         ><Column field="journalDate" header="일지일자" /><Column header="제목"
           ><template #body="{ data }"
-            ><button class="link-button" @click.stop="router.push(`/journals/${data.journalId}`)">
-              {{ data.journalTitle || '제목 없음' }}
+            ><button
+              class="link-button"
+              @click.stop="router.push(`/journals/${data.journalId}`)"
+            >
+              {{ data.journalTitle || "제목 없음" }}
             </button></template
           ></Column
         ><Column field="fileCount" header="첨부 수" /><Column header="작성일시"
-          ><template #body="{ data }">{{ dateTime(data.createdAt) }}</template></Column
+          ><template #body="{ data }">{{
+            dateTime(data.createdAt)
+          }}</template></Column
         ><Column header="수정일시"
-          ><template #body="{ data }">{{ dateTime(data.updatedAt) }}</template></Column
+          ><template #body="{ data }">{{
+            dateTime(data.updatedAt)
+          }}</template></Column
         ><Column header="관리"
           ><template #body="{ data }"
             ><div class="row-buttons">

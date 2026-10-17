@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 .required-label {
   display: inline-flex;
@@ -62,11 +62,11 @@
     color: var(--app-text);
     background: var(--app-canvas);
     font-family:
-      "Pretendard Variable",
+      'Pretendard Variable',
       Pretendard,
       -apple-system,
       BlinkMacSystemFont,
-      "Segoe UI",
+      'Segoe UI',
       sans-serif;
     font-size: 14px;
     font-weight: 400;
@@ -483,11 +483,7 @@
 
 .app-shell .brand-symbol {
   color: #fff !important;
-  background: linear-gradient(
-    145deg,
-    var(--app-primary-500),
-    var(--app-primary-700)
-  ) !important;
+  background: linear-gradient(145deg, var(--app-primary-500), var(--app-primary-700)) !important;
   border-radius: 0.625rem !important;
   box-shadow: 0 6px 16px rgb(37 99 235 / 0.22) !important;
 }
@@ -589,19 +585,12 @@
   padding: 0 !important;
 }
 
-:where(.trade-page, .settings-page)
-  :where(.section-label, .page-heading > div > p) {
+:where(.trade-page, .settings-page) :where(.section-label, .page-heading > div > p) {
   color: var(--app-primary-700) !important;
 }
 
 :where(.trade-page, .settings-page)
-  :where(
-    .hero h1,
-    .page-heading h1,
-    .trade-modal h2,
-    .stock-picker-modal h2,
-    .modal h2
-  ) {
+  :where(.hero h1, .page-heading h1, .trade-modal h2, .stock-picker-modal h2, .modal h2) {
   color: #0f172a !important;
   font-family: inherit !important;
   font-weight: 800 !important;
@@ -628,12 +617,7 @@
 }
 
 :where(.trade-page, .settings-page, .journal-page)
-  :where(
-    .hero h1,
-    .page-heading h1,
-    .page-shell > header h1,
-    .journal-page-head h1
-  ) {
+  :where(.hero h1, .page-heading h1, .page-shell > header h1, .journal-page-head h1) {
   font-family: inherit !important;
   font-size: clamp(24px, 2.4vw, 32px) !important;
   font-weight: 800 !important;
@@ -641,12 +625,7 @@
 }
 
 :where(.trade-page, .settings-page, .journal-page)
-  :where(
-    .section-label,
-    .page-heading > div > p,
-    .page-shell > header p,
-    .journal-page-head p
-  ) {
+  :where(.section-label, .page-heading > div > p, .page-shell > header p, .journal-page-head p) {
   margin: 0 0 9px !important;
   color: var(--app-primary-700) !important;
   font-size: 11px !important;

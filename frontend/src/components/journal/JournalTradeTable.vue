@@ -1,51 +1,54 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { stockTradeApi, type StockTrade } from '../../services/stockTradeApi'
-const props = defineProps<{ date: string }>()
-const rows = ref<StockTrade[]>([])
-const loading = ref(false)
-const error = ref('')
-const page = ref(0)
-const totalPages = ref(0)
-const tradeType = ref('')
+import { onMounted, ref, watch } from "vue";
+import { stockTradeApi, type StockTrade } from "../../services/stockTradeApi";
+const props = defineProps<{ date: string }>();
+const rows = ref<StockTrade[]>([]);
+const loading = ref(false);
+const error = ref("");
+const page = ref(0);
+const totalPages = ref(0);
+const tradeType = ref("");
 const number = (v: number | string | null) =>
-  v == null ? '—' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 2 })
+  v == null
+    ? "—"
+    : Number(v).toLocaleString("ko-KR", { maximumFractionDigits: 2 });
 async function load() {
   if (!props.date) {
-    rows.value = []
-    return
+    rows.value = [];
+    return;
   }
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
   try {
     const p = new URLSearchParams({
       dateFrom: props.date,
       dateTo: props.date,
       page: String(page.value),
-      size: '20',
-    })
-    if (tradeType.value) p.set('tradeType', tradeType.value)
-    const r = await stockTradeApi.getTrades(p)
-    rows.value = r.content
-    totalPages.value = r.totalPages
+      size: "20",
+    });
+    if (tradeType.value) p.set("tradeType", tradeType.value);
+    const r = await stockTradeApi.getTrades(p);
+    rows.value = r.content;
+    totalPages.value = r.totalPages;
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '거래 내역을 불러오지 못했습니다.'
+    error.value =
+      e instanceof Error ? e.message : "거래 내역을 불러오지 못했습니다.";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 watch(
   () => props.date,
   () => {
-    page.value = 0
-    load()
+    page.value = 0;
+    load();
   },
-)
+);
 watch(tradeType, () => {
-  page.value = 0
-  load()
-})
-onMounted(load)
+  page.value = 0;
+  load();
+});
+onMounted(load);
 </script>
 <template>
   <section class="journal-card trade-reference">
@@ -62,7 +65,9 @@ onMounted(load)
     </header>
     <p v-if="!date" class="journal-empty">일지일자를 선택해 주세요.</p>
     <p v-else-if="error" class="journal-alert">{{ error }}</p>
-    <p v-else-if="loading" class="journal-empty">거래 내역을 불러오는 중입니다.</p>
+    <p v-else-if="loading" class="journal-empty">
+      거래 내역을 불러오는 중입니다.
+    </p>
     <div v-else class="journal-table-wrap">
       <table>
         <thead>
@@ -82,7 +87,7 @@ onMounted(load)
           <tr v-for="r in rows" :key="r.tradeId">
             <td>
               <span :class="['trade-badge', r.tradeType.toLowerCase()]">{{
-                r.tradeType === 'BUY' ? '매수' : '매도'
+                r.tradeType === "BUY" ? "매수" : "매도"
               }}</span>
             </td>
             <td>{{ r.stockName }}</td>
@@ -92,10 +97,12 @@ onMounted(load)
             <td class="number">{{ number(r.executionAmount) }}</td>
             <td class="number">{{ number(r.purchasePrice) }}</td>
             <td class="number">{{ number(r.realizedProfitLoss) }}</td>
-            <td>{{ r.tradeMemo || '—' }}</td>
+            <td>{{ r.tradeMemo || "—" }}</td>
           </tr>
           <tr v-if="!rows.length">
-            <td colspan="9" class="journal-empty">해당 날짜의 거래가 없습니다.</td>
+            <td colspan="9" class="journal-empty">
+              해당 날짜의 거래가 없습니다.
+            </td>
           </tr>
         </tbody>
       </table>
@@ -104,8 +111,8 @@ onMounted(load)
       <button
         :disabled="page === 0"
         @click="
-          page--
-          load()
+          page--;
+          load();
         "
       >
         이전</button
@@ -113,8 +120,8 @@ onMounted(load)
       ><button
         :disabled="page + 1 >= totalPages"
         @click="
-          page++
-          load()
+          page++;
+          load();
         "
       >
         다음

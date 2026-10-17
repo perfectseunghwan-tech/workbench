@@ -19,12 +19,12 @@ public class StockMasterRepository {
     private final NamedParameterJdbcTemplate jdbc;
     public StockMasterRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    public PageResponse<StockResponse> findStocks(String keyword, String marketCode, Boolean useYn, int page, int size) {
+    public PageResponse<StockResponse> findStocks(String keyword, String marketCode, Boolean useYn, int page, int size, String sortField, String sortDirection) {
         Map<String, Object> params = new HashMap<>();
         String where = where(keyword, marketCode, useYn, params);
         params.put("limit", size); params.put("offset", page * size);
         List<StockResponse> content = jdbc.query(select() + where
-                + " ORDER BY stock_name, stock_code, stock_id LIMIT :limit OFFSET :offset", params, mapper());
+                + " ORDER BY " + orderBy(sortField, sortDirection) + " LIMIT :limit OFFSET :offset", params, mapper());
         Long total = jdbc.queryForObject("SELECT COUNT(*) FROM stock_master" + where, params, Long.class);
         long count = total == null ? 0 : total;
         return new PageResponse<>(content, count, count == 0 ? 0 : (int) Math.ceil((double) count / size), page, size);
@@ -70,6 +70,18 @@ public class StockMasterRepository {
     public int delete(long stockId) { return jdbc.update("DELETE FROM stock_master WHERE stock_id = :stockId", Map.of("stockId", stockId)); }
 
     private String select() { return "SELECT stock_id, stock_code, stock_name, market_code, currency_code, use_yn, created_at, updated_at FROM stock_master"; }
+    private String orderBy(String sortField, String sortDirection) {
+        String column = switch (sortField) {
+            case "stockCode" -> "stock_code";
+            case "marketCode" -> "market_code";
+            case "currencyCode" -> "currency_code";
+            case "useYn" -> "use_yn";
+            case "updatedAt" -> "updated_at";
+            default -> "stock_name";
+        };
+        String direction = "asc".equalsIgnoreCase(sortDirection) ? "ASC" : "DESC";
+        return column + " " + direction + " NULLS LAST, stock_id ASC";
+    }
     private String where(String keyword, String marketCode, Boolean useYn, Map<String, Object> p) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         if (keyword != null && !keyword.isBlank()) { where.append(" AND (LOWER(stock_code) LIKE :keyword OR LOWER(stock_name) LIKE :keyword)"); p.put("keyword", "%" + keyword.trim().toLowerCase() + "%"); }

@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StockMasterService {
     private final StockMasterRepository repository;
     public StockMasterService(StockMasterRepository repository) { this.repository = repository; }
-    @Transactional(readOnly = true) public PageResponse<StockResponse> findStocks(String keyword, String marketCode, Boolean useYn, int page, int size) { return repository.findStocks(keyword, marketCode, useYn, page, size); }
+    @Transactional(readOnly = true) public PageResponse<StockResponse> findStocks(String keyword, String marketCode, Boolean useYn, int page, int size, String sortField, String sortDirection) { return repository.findStocks(keyword, marketCode, useYn, page, size, sortField, sortDirection); }
     @Transactional(readOnly = true) public StockResponse findStock(long id) { return repository.findById(id).orElseThrow(() -> notFound()); }
     @Transactional public StockResponse create(StockRequest request) { StockRequest normalized = normalize(request); unique(normalized, null); return saved(repository.insert(normalized)); }
     @Transactional public StockResponse update(long id, StockRequest request) { findStock(id); StockRequest normalized = normalize(request); unique(normalized, id); if (repository.update(id, normalized) == 0) throw notFound(); return saved(id); }
@@ -27,7 +27,7 @@ public class StockMasterService {
     }
     private String required(String value, String missing, int max, String tooLong) { String cleaned = clean(value); if (cleaned == null) throw bad(missing); if (cleaned.length() > max) throw bad(tooLong); return cleaned; }
     private String clean(String value) { if (value == null) return null; String trimmed = value.trim(); return trimmed.isEmpty() ? null : trimmed; }
-    private void unique(StockRequest r, Long excluded) { if (repository.stockCodeAndMarketExists(r.stockCode(), r.marketCode(), excluded)) throw new ApiException(HttpStatus.CONFLICT, "이미 등록된 종목코드와 시장 조합입니다."); }
+    private void unique(StockRequest r, Long excluded) { if (repository.stockCodeAndMarketExists(r.stockCode(), r.marketCode(), excluded)) throw new ApiException(HttpStatus.CONFLICT, "이미 등록된 종목코드와 시장코드 조합입니다."); }
     private StockResponse saved(long id) { return repository.findById(id).orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 종목을 조회하지 못했습니다.")); }
     private ApiException bad(String message) { return new ApiException(HttpStatus.BAD_REQUEST, message); }
     private ApiException notFound() { return new ApiException(HttpStatus.NOT_FOUND, "종목을 찾을 수 없습니다."); }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import DataTable from "primevue/datatable";
+import type { DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
 import {
   stockMasterApi,
@@ -16,6 +17,15 @@ const stocks = ref<ManagedStock[]>([]),
 const page = ref(0),
   size = 20,
   total = ref(0);
+type StockSortField =
+  | "stockCode"
+  | "stockName"
+  | "marketCode"
+  | "currencyCode"
+  | "useYn"
+  | "updatedAt";
+const sortField = ref<StockSortField>("stockName"),
+  sortOrder = ref<1 | -1>(-1);
 const filters = ref({
   keyword: "",
   marketCode: "",
@@ -44,6 +54,8 @@ function params() {
   const p = new URLSearchParams({
     page: String(page.value),
     size: String(size),
+    sortField: sortField.value,
+    sortDirection: sortOrder.value === 1 ? "asc" : "desc",
   });
   if (filters.value.keyword.trim())
     p.set("keyword", filters.value.keyword.trim());
@@ -152,6 +164,25 @@ async function onPage(event: { page: number }) {
   page.value = event.page;
   await load();
 }
+async function onSort(event: DataTableSortEvent) {
+  const allowedFields: StockSortField[] = [
+    "stockCode",
+    "stockName",
+    "marketCode",
+    "currencyCode",
+    "useYn",
+    "updatedAt",
+  ];
+  if (
+    typeof event.sortField !== "string" ||
+    !allowedFields.includes(event.sortField as StockSortField)
+  )
+    return;
+  sortField.value = event.sortField as StockSortField;
+  sortOrder.value = event.sortOrder === 1 ? 1 : -1;
+  page.value = 0;
+  await load();
+}
 onMounted(load);
 </script>
 
@@ -198,24 +229,32 @@ onMounted(load);
           :first="page * size"
           :totalRecords="total"
           :loading="loading"
+          :sortField="sortField"
+          :sortOrder="sortOrder"
           scrollable
           :tableStyle="{ minWidth: '880px' }"
           @page="onPage"
+          @sort="onSort"
         >
-          <Column field="stockCode" header="종목코드" /><Column
+          <Column field="stockCode" header="종목코드" sortable /><Column
             field="stockName"
             header="종목명"
-          /><Column field="marketCode" header="시장코드"
+            sortable
+          /><Column field="marketCode" header="시장코드" sortable
             ><template #body="{ data }">{{
               data.marketCode || "—"
             }}</template></Column
-          ><Column field="currencyCode" header="통화" /><Column header="상태"
+          ><Column field="currencyCode" header="통화" sortable /><Column
+            field="useYn"
+            header="상태"
+            sortable
             ><template #body="{ data }"
               ><span class="status" :class="{ off: !data.useYn }">{{
                 data.useYn ? "사용 중" : "사용 중지"
               }}</span></template
             ></Column
-          ><Column field="updatedAt" header="수정일시" /><Column header="관리"
+          ><Column field="updatedAt" header="수정일시" sortable /><Column
+            header="관리"
             ><template #body="{ data }"
               ><div class="actions">
                 <button
@@ -284,7 +323,14 @@ onMounted(load);
             ><input v-model="form.useYn" type="checkbox" /> 사용 중인
             종목</label
           >
-          <p v-if="errorMessage" class="alert">{{ errorMessage }}</p>
+          <p
+            v-if="errorMessage"
+            class="alert"
+            role="alert"
+            aria-live="assertive"
+          >
+            {{ errorMessage }}
+          </p>
           <footer>
             <button class="secondary" type="button" @click="showForm = false">
               취소</button
@@ -381,6 +427,12 @@ select {
 }
 .panel {
   overflow: hidden;
+}
+.panel :deep(.p-datatable-thead > tr > th) {
+  text-align: left !important;
+}
+.panel :deep(.p-datatable-column-header-content) {
+  justify-content: flex-start !important;
 }
 .status {
   padding: 4px 8px;
