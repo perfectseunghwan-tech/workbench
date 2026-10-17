@@ -1,21 +1,34 @@
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { Node, mergeAttributes } from '@tiptap/core'
+import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { Table } from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
-import type { JournalContent } from '../../services/investmentJournalApi'
+
+interface EditorDocument {
+  type: 'doc'
+  content?: Record<string, unknown>[]
+}
+
 const props = withDefaults(
-  defineProps<{ modelValue: JournalContent; readonly?: boolean; journalId?: number }>(),
-  { readonly: false },
+  defineProps<{
+    modelValue: EditorDocument
+    readonly?: boolean
+    imagesEnabled?: boolean
+    journalId?: number
+    strategyId?: number
+    strategyPostId?: number
+  }>(),
+  { readonly: false, imagesEnabled: false },
 )
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: JournalContent): void
+  (e: 'update:modelValue', value: EditorDocument): void
   (e: 'image-selected', file: File, key: string): void
 }>()
+
 const objectUrls = new Set<string>()
 const imageNode = Node.create({
   name: 'journalImage',
@@ -36,8 +49,14 @@ const imageNode = Node.create({
   renderHTML({ HTMLAttributes }) {
     const src =
       HTMLAttributes.previewUrl ||
-      (props.journalId && HTMLAttributes.fileId
-        ? `/api/investment-journals/${props.journalId}/files/${HTMLAttributes.fileId}`
+      (HTMLAttributes.fileId
+        ? props.journalId
+          ? `/api/investment-journals/${props.journalId}/files/${HTMLAttributes.fileId}`
+          : props.strategyId && props.strategyPostId
+            ? `/api/investment-strategies/${props.strategyId}/posts/${props.strategyPostId}/files/${HTMLAttributes.fileId}`
+            : props.strategyId
+              ? `/api/investment-strategies/${props.strategyId}/files/${HTMLAttributes.fileId}`
+              : ''
         : '')
     return [
       'img',
@@ -48,8 +67,9 @@ const imageNode = Node.create({
     ]
   },
 })
+
 function insertImageFile(file: File) {
-  if (!file.type.startsWith('image/')) return false
+  if (!props.imagesEnabled || !file.type.startsWith('image/')) return false
   const key = crypto.randomUUID()
   const url = URL.createObjectURL(file)
   objectUrls.add(url)
@@ -64,7 +84,8 @@ function insertImageFile(file: File) {
   emit('image-selected', file, key)
   return true
 }
-function cleanupUrls(value: JournalContent) {
+
+function cleanupUrls(value: EditorDocument) {
   const text = JSON.stringify(value)
   for (const url of objectUrls)
     if (!text.includes(url)) {
@@ -72,6 +93,7 @@ function cleanupUrls(value: JournalContent) {
       objectUrls.delete(url)
     }
 }
+
 const editor = useEditor({
   content: props.modelValue,
   editable: !props.readonly,
@@ -81,64 +103,70 @@ const editor = useEditor({
     TableRow,
     TableHeader,
     TableCell,
-    imageNode,
+    ...(props.imagesEnabled ? [imageNode] : []),
   ],
   editorProps: {
     handlePaste: (_view, event) => {
-      const file = Array.from(event.clipboardData?.files || []).find((f) =>
-        f.type.startsWith('image/'),
+      const file = Array.from(event.clipboardData?.files || []).find((item) =>
+        item.type.startsWith('image/'),
       )
       return file ? insertImageFile(file) : false
     },
     handleDrop: (_view, event) => {
-      const file = Array.from(event.dataTransfer?.files || []).find((f) =>
-        f.type.startsWith('image/'),
+      const file = Array.from(event.dataTransfer?.files || []).find((item) =>
+        item.type.startsWith('image/'),
       )
       return file ? insertImageFile(file) : false
     },
   },
   onUpdate: ({ editor }) => {
-    const value = editor.getJSON() as JournalContent
+    const value = editor.getJSON() as EditorDocument
     cleanupUrls(value)
     emit('update:modelValue', value)
   },
 })
+
 watch(
   () => props.modelValue,
-  (v) => {
+  (value) => {
     if (
       editor.value &&
       !editor.value.isDestroyed &&
-      JSON.stringify(editor.value.getJSON()) !== JSON.stringify(v)
-    )
-      editor.value.commands.setContent(v)
-    cleanupUrls(v)
+      JSON.stringify(editor.value.getJSON()) !== JSON.stringify(value)
+    ) {
+      editor.value.commands.setContent(value)
+    }
+    cleanupUrls(value)
   },
   { deep: true },
 )
 watch(
   () => props.readonly,
-  (v) => editor.value?.setEditable(!v),
+  (value) => editor.value?.setEditable(!value),
 )
-function imageSelected(e: Event) {
-  const input = e.target as HTMLInputElement
+
+function imageSelected(event: Event) {
+  const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) insertImageFile(file)
   input.value = ''
 }
+
 function editAlt() {
   const current = String(editor.value?.getAttributes('journalImage').alt || '')
   const alt = window.prompt('이미지 대체 텍스트', current)
   if (alt !== null) editor.value?.chain().focus().updateAttributes('journalImage', { alt }).run()
 }
+
 onBeforeUnmount(() => {
   objectUrls.forEach((url) => URL.revokeObjectURL(url))
   objectUrls.clear()
   editor.value?.destroy()
 })
 </script>
+
 <template>
-  <div class="journal-editor" :class="{ readonly }">
+  <div class="rich-editor" :class="{ readonly }">
     <div v-if="!readonly && editor" class="editor-toolbar" role="toolbar" aria-label="본문 서식">
       <button type="button" aria-label="문단" @click="editor.chain().focus().setParagraph().run()">
         문단</button
@@ -238,14 +266,17 @@ onBeforeUnmount(() => {
         병합</button
       ><button type="button" aria-label="셀 분할" @click="editor.chain().focus().splitCell().run()">
         분할</button
-      ><label class="editor-file"
-        >이미지<input
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          @change="imageSelected" /></label
-      ><button type="button" aria-label="이미지 대체 텍스트 수정" @click="editAlt">
-        대체텍스트</button
-      ><button type="button" aria-label="실행 취소" @click="editor.chain().focus().undo().run()">
+      ><template v-if="imagesEnabled"
+        ><label class="editor-file"
+          >이미지<input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            @change="imageSelected" /></label
+        ><button type="button" aria-label="이미지 대체 텍스트 수정" @click="editAlt">
+          대체텍스트
+        </button></template
+      >
+      <button type="button" aria-label="실행 취소" @click="editor.chain().focus().undo().run()">
         ↶</button
       ><button type="button" aria-label="다시 실행" @click="editor.chain().focus().redo().run()">
         ↷

@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { investmentJournalApi, type JournalDetail } from '../services/investmentJournalApi'
 import { formatBytes } from '../utils/journalContent'
-import JournalEditor from '../components/journal/JournalEditor.vue'
+import RichTextEditor from '../components/RichTextEditor.vue'
 import JournalTradeTable from '../components/journal/JournalTradeTable.vue'
 const route = useRoute()
 const router = useRouter()
@@ -71,7 +71,12 @@ onMounted(load)
         </div>
       </section>
       <section class="journal-card content-card">
-        <JournalEditor :model-value="journal.journalContent" readonly :journal-id="id" />
+        <RichTextEditor
+          :model-value="journal.journalContent"
+          readonly
+          :images-enabled="true"
+          :journal-id="id"
+        />
       </section>
       <section v-if="journal.files.some((f) => f.fileType === 'FILE')" class="journal-card">
         <header><h2>첨부파일</h2></header>

@@ -54,3 +54,101 @@
 :where(.trade-page, .settings-page, .journal-page, .strategy-page) table th {
   text-align: left !important;
 }
+
+/* Consistent table surface used by management and history screens. */
+:where(.account-style-table) {
+  width: calc(100% - 28px);
+  margin: 8px 14px;
+}
+:where(.account-style-table) .p-datatable-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+:where(.account-style-table) .p-datatable-thead > tr > th {
+  padding: 12px 15px;
+  color: #7d8782;
+  background: #f8f9f7;
+  font-size: 11px;
+  text-align: left;
+}
+:where(.account-style-table) .p-datatable-tbody > tr > td {
+  padding: 15px;
+  border-top: 1px solid #edf0ec;
+  font-size: 13px;
+}
+
+:where(.account-style-search) {
+  padding: 14px !important;
+  background: #fff;
+  border: 1px solid #dfe4dc;
+  border-bottom: 0;
+  box-shadow: none;
+  margin-bottom: 0 !important;
+}
+
+/* Shared Tiptap editor surface and toolbar. */
+.rich-editor {
+  overflow: hidden;
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--app-radius);
+}
+.rich-editor .editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--app-border);
+}
+.rich-editor .editor-toolbar button,
+.rich-editor .editor-file {
+  min-height: 32px !important;
+  padding: 0 9px !important;
+  color: #475569 !important;
+  background: #fff !important;
+  border: 1px solid var(--app-border) !important;
+}
+.rich-editor .editor-toolbar .active {
+  color: var(--app-primary-700) !important;
+  background: var(--app-primary-50) !important;
+}
+.rich-editor .tiptap {
+  min-height: 300px;
+  padding: 18px;
+  outline: 0;
+}
+.rich-editor.readonly {
+  border: 0;
+}
+.rich-editor.readonly .tiptap {
+  min-height: 100px;
+  padding: 0;
+}
+.rich-editor .tiptap table {
+  white-space: normal;
+}
+.rich-editor .tiptap img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 14px auto;
+  border-radius: var(--app-radius);
+}
+
+.strategy-page .file-picker {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: var(--app-radius);
+  cursor: pointer;
+}
+.strategy-page .file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}

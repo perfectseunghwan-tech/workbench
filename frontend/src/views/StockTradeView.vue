@@ -440,7 +440,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section class="filter-card">
+      <section class="filter-card account-style-search">
         <div class="filter-heading">
           <h2><i class="pi pi-sliders-h"></i> 거래 찾기</h2>
           <button class="text-button" type="button" @click="resetFilters">
@@ -519,7 +519,7 @@ onMounted(async () => {
         </div>
         <div class="table-wrap">
           <DataTable
-            class="trade-list-table"
+            class="trade-list-table account-style-table"
             :value="trades"
             dataKey="tradeId"
             :loading="loading"
@@ -1139,15 +1139,27 @@ textarea:focus {
   background: #0d3028;
 }
 .table-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
   padding: 22px 24px 17px;
+}
+.table-heading > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
 }
 .table-heading p {
   margin: 5px 0 0;
   color: #87908b;
   font-size: 12px;
+  white-space: nowrap;
 }
 .legend {
   display: flex;
+  flex-shrink: 0;
   gap: 16px;
   color: #69736e;
   font-size: 12px;

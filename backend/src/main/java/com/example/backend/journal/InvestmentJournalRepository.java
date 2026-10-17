@@ -35,7 +35,7 @@ public class InvestmentJournalRepository {
         String from = " FROM investment_journal j";
         List<JournalSummaryResponse> content = jdbc.query("""
                 SELECT j.journal_id, j.journal_date, j.journal_title, j.created_at, j.updated_at,
-                       (SELECT COUNT(*) FROM investment_journal_file f WHERE f.journal_id=j.journal_id) file_count
+                       (SELECT COUNT(*) FROM investment_content_file f WHERE f.journal_id=j.journal_id) file_count
                 """ + from + where + " ORDER BY " + orderBy(filter.sortField(), filter.sortDirection())
                         + " LIMIT :limit OFFSET :offset",
                 params, (rs, n) -> new JournalSummaryResponse(rs.getLong("journal_id"),
@@ -64,12 +64,12 @@ public class InvestmentJournalRepository {
     }
 
     public List<FileRow> findFiles(long journalId) {
-        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_journal_file WHERE journal_id=:id ORDER BY sort_order,file_id",
+        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE journal_id=:id ORDER BY sort_order,file_id",
                 Map.of("id", journalId), (rs, n) -> file(rs));
     }
 
     public Optional<FileRow> findFile(long journalId, long fileId) {
-        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_journal_file WHERE journal_id=:journalId AND file_id=:fileId",
+        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE journal_id=:journalId AND file_id=:fileId",
                 Map.of("journalId", journalId, "fileId", fileId), (rs, n) -> file(rs)).stream().findFirst();
     }
 
@@ -92,7 +92,7 @@ public class InvestmentJournalRepository {
 
     public long insertFile(long journalId, StoredFile f) {
         Long id = jdbc.queryForObject("""
-                INSERT INTO investment_journal_file(journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order)
+                INSERT INTO investment_content_file(journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order)
                 VALUES(:journalId,:fileType,:original,:stored,:path,:mime,:size,:sortOrder) RETURNING file_id
                 """, new MapSqlParameterSource().addValue("journalId", journalId).addValue("fileType", f.fileType())
                 .addValue("original", f.originalFileName()).addValue("stored", f.storedFileName())
@@ -103,12 +103,12 @@ public class InvestmentJournalRepository {
     }
 
     public void deleteFiles(long journalId, Collection<Long> retained) {
-        if (retained.isEmpty()) jdbc.update("DELETE FROM investment_journal_file WHERE journal_id=:id", Map.of("id", journalId));
-        else jdbc.update("DELETE FROM investment_journal_file WHERE journal_id=:id AND file_id NOT IN (:ids)", Map.of("id", journalId, "ids", retained));
+        if (retained.isEmpty()) jdbc.update("DELETE FROM investment_content_file WHERE journal_id=:id", Map.of("id", journalId));
+        else jdbc.update("DELETE FROM investment_content_file WHERE journal_id=:id AND file_id NOT IN (:ids)", Map.of("id", journalId, "ids", retained));
     }
     public void updateFileOrder(long journalId, List<Long> ids) {
         for (int i = 0; i < ids.size(); i++) {
-            jdbc.update("UPDATE investment_journal_file SET sort_order=:sortOrder WHERE journal_id=:journalId AND file_id=:fileId",
+            jdbc.update("UPDATE investment_content_file SET sort_order=:sortOrder WHERE journal_id=:journalId AND file_id=:fileId",
                     Map.of("sortOrder", i, "journalId", journalId, "fileId", ids.get(i)));
         }
     }

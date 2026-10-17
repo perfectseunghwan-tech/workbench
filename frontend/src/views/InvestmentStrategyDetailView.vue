@@ -3,9 +3,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   investmentStrategyApi,
+  investmentHorizons,
   postTypeLabel,
-  statusLabel,
-  strategyCategories,
+  strategyScopes,
+  strategyTypes,
   type PostPayload,
   type RichContent,
   type StrategyDetail,
@@ -13,7 +14,9 @@ import {
   type StrategyPost,
 } from '../services/investmentStrategyApi'
 import { investmentJournalApi, type JournalSummary } from '../services/investmentJournalApi'
-import StrategyEditor from '../components/strategy/StrategyEditor.vue'
+import RichTextEditor from '../components/RichTextEditor.vue'
+import { useContentAttachments } from '../utils/useContentAttachments'
+import { formatBytes } from '../utils/journalContent'
 const route = useRoute(),
   router = useRouter(),
   id = Number(route.params.strategyId),
@@ -32,7 +35,12 @@ const route = useRoute(),
   showJournals = ref(false),
   allJournals = ref<JournalSummary[]>([]),
   selectedJournals = ref<number[]>([])
-const categoryName = (c: string) => strategyCategories.find((x) => x[0] === c)?.[1] || c
+const postAttachments = useContentAttachments(postContent)
+const strategyTypeName = (code: string) => strategyTypes.find((x) => x[0] === code)?.[1] || code
+const investmentHorizonName = (code: string) =>
+  investmentHorizons.find((x) => x[0] === code)?.[1] || code
+const scopeName = (scope: StrategyDetail['strategyScope']) =>
+  strategyScopes.find((item) => item.code === scope)?.name || scope
 const money = (v: number | string | null) => (v == null ? '—' : Number(v).toLocaleString('ko-KR'))
 const dateTime = (v: string) => new Date(v).toLocaleString('ko-KR')
 const currentJournalIds = computed(() => strategy.value?.journals.map((x) => x.journalId) || [])
@@ -52,6 +60,9 @@ function openPost(post?: StrategyPost) {
   postTitle.value = post?.title || ''
   postDate.value = post?.postDate || new Date().toISOString().slice(0, 10)
   postContent.value = post?.content || { type: 'doc', content: [] }
+  postAttachments.existing.value = post?.files || []
+  postAttachments.pending.value = []
+  postAttachments.error.value = ''
   showPost.value = true
 }
 async function savePost() {
@@ -61,14 +72,17 @@ async function savePost() {
   }
   saving.value = true
   try {
+    const { files, ...filePayload } = postAttachments.submission()
     const p: PostPayload = {
       postType: postType.value,
       title: postTitle.value.trim(),
       postDate: postDate.value,
       content: postContent.value,
+      ...filePayload,
     }
-    if (editingPostId.value) await investmentStrategyApi.updatePost(id, editingPostId.value, p)
-    else await investmentStrategyApi.createPost(id, p)
+    if (editingPostId.value)
+      await investmentStrategyApi.updatePost(id, editingPostId.value, p, files)
+    else await investmentStrategyApi.createPost(id, p, files)
     showPost.value = false
     await load()
   } catch (e) {
@@ -138,13 +152,10 @@ onMounted(load)
     <template v-else-if="strategy"
       ><header class="strategy-head detail-head">
         <div>
-          <p>{{ strategy.strategyScope === 'STOCK' ? 'STOCK STRATEGY' : 'GENERAL STRATEGY' }}</p>
+          <p>{{ scopeName(strategy.strategyScope) }}</p>
           <h1>{{ strategy.title }}</h1>
           <div class="meta">
-            <span class="status" :class="strategy.status.toLowerCase()">{{
-              statusLabel[strategy.status]
-            }}</span
-            ><span>현재 본문 V{{ strategy.versionNo }}</span
+            <span>현재 본문 V{{ strategy.versionNo }}</span
             ><span>최종 수정 {{ dateTime(strategy.updatedAt) }}</span>
           </div>
         </div>
@@ -156,8 +167,18 @@ onMounted(load)
       </header>
       <p v-if="error" class="strategy-alert">{{ error }}</p>
       <section class="strategy-card overview">
-        <div class="chips">
-          <span v-for="code in strategy.categoryCodes" :key="code">{{ categoryName(code) }}</span>
+        <div class="chips strategy-classifications">
+          <span>적용 범위 · {{ scopeName(strategy.strategyScope) }}</span>
+          <span
+            >전략 유형 ·
+            {{ strategy.strategyType ? strategyTypeName(strategy.strategyType) : '—' }}</span
+          >
+          <span
+            >투자 기간 ·
+            {{
+              strategy.investmentHorizon ? investmentHorizonName(strategy.investmentHorizon) : '—'
+            }}</span
+          >
         </div>
         <div class="linked-stocks">
           <b>관련 종목</b><span v-if="!strategy.stocks.length">등록된 종목이 없습니다.</span
@@ -174,7 +195,24 @@ onMounted(load)
           </div>
           <button class="secondary" @click="router.push(`/strategies/${id}/edit`)">수정</button>
         </header>
-        <StrategyEditor :model-value="strategy.content" readonly />
+        <RichTextEditor
+          :model-value="strategy.content"
+          :strategy-id="id"
+          :images-enabled="true"
+          readonly
+        />
+        <ul v-if="strategy.files.some((file) => file.fileType === 'FILE')" class="file-list">
+          <li
+            v-for="file in strategy.files.filter((item) => item.fileType === 'FILE')"
+            :key="file.fileId"
+          >
+            <span
+              ><i class="pi pi-paperclip" /> {{ file.originalFileName }}
+              <small>{{ formatBytes(file.fileSize) }}</small></span
+            >
+            <a :href="file.contentUrl">다운로드</a>
+          </li>
+        </ul>
       </section>
       <nav class="strategy-tabs">
         <button :class="{ active: tab === 'posts' }" @click="tab = 'posts'">
@@ -210,7 +248,25 @@ onMounted(load)
               ><button class="danger" @click="removePost(post)">삭제</button>
             </div>
           </header>
-          <StrategyEditor :model-value="post.content" readonly />
+          <RichTextEditor
+            :model-value="post.content"
+            :strategy-id="id"
+            :strategy-post-id="post.postId"
+            :images-enabled="true"
+            readonly
+          />
+          <ul v-if="post.files.some((file) => file.fileType === 'FILE')" class="file-list">
+            <li
+              v-for="file in post.files.filter((item) => item.fileType === 'FILE')"
+              :key="file.fileId"
+            >
+              <span
+                ><i class="pi pi-paperclip" /> {{ file.originalFileName }}
+                <small>{{ formatBytes(file.fileSize) }}</small></span
+              >
+              <a :href="file.contentUrl">다운로드</a>
+            </li>
+          </ul>
         </article>
       </section>
       <section v-else-if="tab === 'trades'" class="strategy-card">
@@ -315,7 +371,61 @@ onMounted(load)
             ><label>작성일<input v-model="postDate" type="date" /></label
             ><label class="wide">제목<input v-model="postTitle" maxlength="200" /></label>
           </div>
-          <StrategyEditor v-model="postContent" />
+          <RichTextEditor
+            v-model="postContent"
+            :strategy-id="id"
+            :strategy-post-id="editingPostId || undefined"
+            :images-enabled="true"
+            @image-selected="postAttachments.addImage"
+          />
+          <p v-if="postAttachments.error.value" class="strategy-alert">
+            {{ postAttachments.error.value }}
+          </p>
+          <div class="attachments">
+            <div class="attachments-head">
+              <div>
+                <h2>첨부파일</h2>
+                <p>파일당 25MB, 최대 30개</p>
+              </div>
+              <label class="file-picker"
+                ><i class="pi pi-paperclip" /> 파일 첨부<input
+                  type="file"
+                  multiple
+                  @change="postAttachments.addFiles"
+              /></label>
+            </div>
+            <ul class="file-list">
+              <li v-for="file in postAttachments.existing.value" :key="`old-${file.fileId}`">
+                <span
+                  >{{ file.originalFileName }}
+                  <small>{{ formatBytes(file.fileSize) }} · 기존</small></span
+                >
+                <button type="button" class="danger" @click="postAttachments.removeExisting(file)">
+                  제거
+                </button>
+              </li>
+              <li v-for="item in postAttachments.pending.value" :key="item.key">
+                <span
+                  >{{ item.file.name }}
+                  <small
+                    >{{ formatBytes(item.file.size) }} ·
+                    {{ item.type === 'IMAGE' ? '본문 이미지' : '신규 파일' }}</small
+                  ></span
+                >
+                <button type="button" class="danger" @click="postAttachments.removePending(item)">
+                  제거
+                </button>
+              </li>
+              <li
+                v-if="
+                  !postAttachments.existing.value.length && !postAttachments.pending.value.length
+                "
+                class="empty"
+              >
+                첨부파일이 없습니다.
+              </li>
+            </ul>
+          </div>
         </div>
         <footer>
           <button class="secondary" @click="showPost = false">취소</button
@@ -333,7 +443,7 @@ onMounted(load)
           <button @click="historyPreview = undefined"><i class="pi pi-times" /></button>
         </header>
         <div class="modal-body">
-          <StrategyEditor :model-value="historyPreview.content" readonly />
+          <RichTextEditor :model-value="historyPreview.content" readonly />
         </div>
         <footer>
           <button class="secondary" @click="historyPreview = undefined">닫기</button

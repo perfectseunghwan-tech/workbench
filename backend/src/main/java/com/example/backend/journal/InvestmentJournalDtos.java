@@ -42,6 +42,6 @@ public final class InvestmentJournalDtos {
     record FileRow(Long fileId, Long journalId, String fileType, String originalFileName,
             String storedFileName, String filePath, String mimeType, Long fileSize,
             int sortOrder, LocalDateTime createdAt) {}
-    record StoredFile(String originalFileName, String storedFileName, String filePath, String stagingPath,
+    public record StoredFile(String originalFileName, String storedFileName, String filePath, String stagingPath,
             String mimeType, long fileSize, String fileType, int sortOrder) {}
 }

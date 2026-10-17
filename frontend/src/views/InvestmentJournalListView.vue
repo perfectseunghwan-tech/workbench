@@ -94,7 +94,7 @@ onMounted(load)
         <i class="pi pi-plus" /> 일지 작성
       </button>
     </div>
-    <section class="journal-card journal-filters">
+    <section class="journal-card journal-filters account-style-search">
       <label>시작일<input v-model="from" type="date" /></label
       ><label>종료일<input v-model="to" type="date" /></label
       ><label class="grow"
@@ -109,7 +109,7 @@ onMounted(load)
     <p v-if="error" class="journal-alert">{{ error }}</p>
     <section class="journal-card">
       <DataTable
-        class="journal-list-table"
+        class="journal-list-table account-style-table"
         :value="rows"
         :loading="loading"
         data-key="journalId"

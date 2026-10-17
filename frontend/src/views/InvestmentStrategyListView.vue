@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import type { DataTableSortEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import {
+  investmentHorizons,
   investmentStrategyApi,
-  statusLabel,
-  strategyCategories,
+  strategyScopes,
+  strategyTypes,
   type StrategySummary,
 } from '../services/investmentStrategyApi'
 const router = useRouter(),
@@ -16,14 +17,34 @@ const router = useRouter(),
   error = ref(''),
   keyword = ref(''),
   scope = ref(''),
-  category = ref(''),
-  status = ref(''),
+  strategyType = ref(''),
+  investmentHorizon = ref(''),
   sort = ref<StrategySortField>('latestActivityAt'),
   sortOrder = ref<1 | -1>(-1),
   page = ref(0),
   total = ref(0)
-const categoryName = (code: string) => strategyCategories.find((x) => x[0] === code)?.[1] || code
-type StrategySortField = 'latestActivityAt' | 'createdAt' | 'title' | 'status'
+const strategyTypeName = (code: string) => strategyTypes.find((x) => x[0] === code)?.[1] || code
+const investmentHorizonName = (code: string) =>
+  investmentHorizons.find((x) => x[0] === code)?.[1] || code
+const scopeName = (scope: StrategySummary['strategyScope']) =>
+  strategyScopes.find((item) => item.code === scope)?.name || scope
+const availableTypes = computed(() =>
+  scope.value
+    ? (strategyScopes.find((item) => item.code === scope.value)?.types ?? [])
+    : strategyTypes,
+)
+function changeScope() {
+  if (!availableTypes.value.some((type) => type[0] === strategyType.value)) {
+    strategyType.value = ''
+  }
+}
+type StrategySortField =
+  | 'latestActivityAt'
+  | 'createdAt'
+  | 'title'
+  | 'strategyScope'
+  | 'strategyType'
+  | 'investmentHorizon'
 const date = (v: string) => new Date(v).toLocaleDateString('ko-KR')
 async function load() {
   loading.value = true
@@ -37,8 +58,8 @@ async function load() {
     })
     if (keyword.value.trim()) p.set('keyword', keyword.value.trim())
     if (scope.value) p.set('strategyScope', scope.value)
-    if (category.value) p.set('categoryCode', category.value)
-    if (status.value) p.set('status', status.value)
+    if (strategyType.value) p.set('strategyType', strategyType.value)
+    if (investmentHorizon.value) p.set('investmentHorizon', investmentHorizon.value)
     const r = await investmentStrategyApi.list(p)
     rows.value = r.content
     total.value = r.totalElements
@@ -55,8 +76,8 @@ function search() {
 function reset() {
   keyword.value = ''
   scope.value = ''
-  category.value = ''
-  status.value = ''
+  strategyType.value = ''
+  investmentHorizon.value = ''
   sort.value = 'latestActivityAt'
   sortOrder.value = -1
   search()
@@ -70,7 +91,14 @@ async function onPage(event: { page: number }) {
   await load()
 }
 async function onSort(event: DataTableSortEvent) {
-  const fields: StrategySortField[] = ['latestActivityAt', 'createdAt', 'title', 'status']
+  const fields: StrategySortField[] = [
+    'latestActivityAt',
+    'createdAt',
+    'title',
+    'strategyScope',
+    'strategyType',
+    'investmentHorizon',
+  ]
   if (typeof event.sortField !== 'string' || !fields.includes(event.sortField as StrategySortField))
     return
   sort.value = event.sortField as StrategySortField
@@ -101,37 +129,40 @@ onMounted(load)
         <i class="pi pi-plus" /> 전략 등록
       </button>
     </header>
-    <section class="strategy-card filters">
+    <section class="strategy-card filters account-style-search">
       <input
         v-model="keyword"
         placeholder="전략명, 본문, 종목명 검색"
         @keyup.enter="search"
-      /><select v-model="scope">
-        <option value="">전체 구분</option>
-        <option value="GENERAL">전체 전략</option>
-        <option value="STOCK">종목 중심</option></select
-      ><select v-model="category">
-        <option value="">전체 분류</option>
-        <option v-for="c in strategyCategories" :key="c[0]" :value="c[0]">
-          {{ c[1] }}
+      /><select v-model="scope" @change="changeScope">
+        <option value="">전체 적용 범위</option>
+        <option v-for="item in strategyScopes" :key="item.code" :value="item.code">
+          {{ item.name }}
         </option></select
-      ><select v-model="status">
-        <option value="">전체 상태</option>
-        <option value="DRAFT">작성 중</option>
-        <option value="ACTIVE">진행 중</option>
-        <option value="PAUSED">보류</option>
-        <option value="CLOSED">종료</option></select
+      ><select v-model="strategyType">
+        <option value="">전체 전략 유형</option>
+        <option v-for="type in availableTypes" :key="type[0]" :value="type[0]">
+          {{ type[1] }}
+        </option></select
+      ><select v-model="investmentHorizon">
+        <option value="">전체 투자 기간</option>
+        <option v-for="horizon in investmentHorizons" :key="horizon[0]" :value="horizon[0]">
+          {{ horizon[1] }}
+        </option></select
       ><select v-model="sort" @change="onSortPresetChange">
         <option value="latestActivityAt">최근 활동순</option>
         <option value="createdAt">최초 작성순</option>
         <option value="title">전략명순</option>
-        <option value="status">상태순</option></select
+        <option value="strategyScope">적용 범위순</option>
+        <option value="strategyType">전략 유형순</option>
+        <option value="investmentHorizon">투자 기간순</option></select
       ><button class="primary" @click="search">조회</button
       ><button class="secondary" @click="reset">초기화</button>
     </section>
     <p v-if="error" class="strategy-alert">{{ error }}</p>
     <section class="strategy-card table-card">
       <DataTable
+        class="account-style-table"
         :value="rows"
         :loading="loading"
         data-key="strategyId"
@@ -150,23 +181,16 @@ onMounted(load)
           ><template #body="{ data }"
             ><button class="title-link" @click.stop="router.push(`/strategies/${data.strategyId}`)">
               {{ data.title }}</button
-            ><small
-              >V{{ data.versionNo }} ·
-              {{ data.strategyScope === 'STOCK' ? '종목 중심' : '전체 전략' }}</small
-            ></template
+            ><small>V{{ data.versionNo }} · {{ scopeName(data.strategyScope) }}</small></template
           ></Column
-        ><Column header="분류"
-          ><template #body="{ data }"
-            ><div class="chips">
-              <span v-for="code in data.categoryCodes" :key="code">{{ categoryName(code) }}</span>
-            </div></template
-          ></Column
-        ><Column field="status" header="상태" sortable
-          ><template #body="{ data }"
-            ><span class="status" :class="data.status.toLowerCase()">{{
-              statusLabel[data.status]
-            }}</span></template
-          ></Column
+        ><Column field="strategyType" header="전략 유형" sortable
+          ><template #body="{ data }">{{
+            data.strategyType ? strategyTypeName(data.strategyType) : '—'
+          }}</template></Column
+        ><Column field="investmentHorizon" header="투자 기간" sortable
+          ><template #body="{ data }">{{
+            data.investmentHorizon ? investmentHorizonName(data.investmentHorizon) : '—'
+          }}</template></Column
         ><Column header="관련 종목"
           ><template #body="{ data }">{{
             data.stocks.map((s: StrategySummary['stocks'][number]) => s.stockName).join(', ') || '—'

@@ -18,7 +18,7 @@ import {
   formatBytes,
   localDate,
 } from '../utils/journalContent'
-import JournalEditor from '../components/journal/JournalEditor.vue'
+import RichTextEditor from '../components/RichTextEditor.vue'
 import JournalTradeTable from '../components/journal/JournalTradeTable.vue'
 type Pending = {
   key: string
@@ -215,9 +215,10 @@ onBeforeRouteLeave(
           </div>
         </div>
         <label class="field-title">본문</label
-        ><JournalEditor
+        ><RichTextEditor
           v-model="content"
           :journal-id="id || undefined"
+          :images-enabled="true"
           @image-selected="addImage"
         />
         <div class="attachments">

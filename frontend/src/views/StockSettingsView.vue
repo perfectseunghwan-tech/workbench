@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import type { DataTableSortEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -24,10 +24,11 @@ const filters = ref({
 })
 const showForm = ref(false),
   editingId = ref<number | null>(null)
+let noticeTimer: ReturnType<typeof setTimeout> | null = null
 const marketOptions = [
   { value: 'KOSPI', label: '코스피' },
   { value: 'KOSDAQ', label: '코스닥' },
-  { value: 'S&P', label: 'S&P' },
+  { value: 'NYSE', label: '뉴욕증권거래소' },
   { value: 'NASDAQ', label: '나스닥' },
 ]
 const form = ref<StockPayload>({
@@ -37,6 +38,15 @@ const form = ref<StockPayload>({
   currencyCode: 'KRW',
   useYn: true,
 })
+
+function showNotice(message: string) {
+  notice.value = message
+  if (noticeTimer) clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
+    notice.value = ''
+    noticeTimer = null
+  }, 3000)
+}
 
 function resetForm() {
   form.value = {
@@ -108,7 +118,7 @@ async function save() {
     }
     if (editingId.value === null) await stockMasterApi.createStock(payload)
     else await stockMasterApi.updateStock(editingId.value, payload)
-    notice.value = editingId.value === null ? '종목이 등록되었습니다.' : '종목이 수정되었습니다.'
+    showNotice(editingId.value === null ? '종목이 등록되었습니다.' : '종목이 수정되었습니다.')
     showForm.value = false
     await load()
   } catch (e) {
@@ -124,7 +134,7 @@ async function toggle(stock: ManagedStock) {
     return
   try {
     await stockMasterApi.updateStockUsage(stock.stockId, !stock.useYn)
-    notice.value = '사용 상태가 변경되었습니다.'
+    showNotice('사용 상태가 변경되었습니다.')
     await load()
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : '상태를 변경하지 못했습니다.'
@@ -135,7 +145,7 @@ async function remove(stock: ManagedStock) {
   try {
     await stockMasterApi.deleteStock(stock.stockId)
     if (stocks.value.length === 1 && page.value > 0) page.value--
-    notice.value = '종목이 삭제되었습니다.'
+    showNotice('종목이 삭제되었습니다.')
     await load()
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : '삭제하지 못했습니다.'
@@ -165,6 +175,9 @@ async function onSort(event: DataTableSortEvent) {
   await load()
 }
 onMounted(load)
+onUnmounted(() => {
+  if (noticeTimer) clearTimeout(noticeTimer)
+})
 </script>
 
 <template>
@@ -180,7 +193,7 @@ onMounted(load)
           <i class="pi pi-plus"></i> 종목 등록
         </button>
       </header>
-      <form class="filters" @submit.prevent="search">
+      <form class="filters account-style-search" @submit.prevent="search">
         <input v-model="filters.keyword" placeholder="종목코드 또는 종목명" /><input
           v-model="filters.marketCode"
           placeholder="시장코드"
@@ -197,6 +210,7 @@ onMounted(load)
       <p v-if="notice" class="toast"><i class="pi pi-check-circle"></i>{{ notice }}</p>
       <section class="panel">
         <DataTable
+          class="account-style-table"
           :value="stocks"
           dataKey="stockId"
           lazy
@@ -212,7 +226,9 @@ onMounted(load)
           @page="onPage"
           @sort="onSort"
         >
-          <Column field="stockCode" header="종목코드" sortable /><Column
+          <Column header="번호"
+            ><template #body="{ index }">{{ page * size + index + 1 }}</template></Column
+          ><Column field="stockCode" header="종목코드" sortable /><Column
             field="stockName"
             header="종목명"
             sortable
@@ -271,7 +287,10 @@ onMounted(load)
             </select></label
           ><label
             ><span class="required-label"><b>*</b> 통화코드</span
-            ><input v-model="form.currencyCode" maxlength="10" required /></label
+            ><select v-model="form.currencyCode" required>
+              <option value="KRW">KRW</option>
+              <option value="USD">USD</option>
+            </select></label
           ><label class="check"
             ><input v-model="form.useYn" type="checkbox" /> 사용 중인 종목</label
           >

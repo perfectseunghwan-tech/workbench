@@ -146,6 +146,10 @@ async function searchAccounts() {
   accountPage.value = 0
   await loadAccounts()
 }
+function clearAccountKeyword() {
+  accountKeyword.value = ''
+  void searchAccounts()
+}
 
 function openBrokerageCreate() {
   editingBrokerageId.value = null
@@ -573,7 +577,15 @@ onMounted(() => loadBrokerages(false))
                 v-model="accountKeyword"
                 :disabled="!selectedBrokerageId"
                 placeholder="계좌 별칭 또는 계좌번호 검색"
-              />
+              /><button
+                v-if="accountKeyword"
+                class="clear-button"
+                type="button"
+                aria-label="검색어 삭제"
+                @click="clearAccountKeyword"
+              >
+                <i class="pi pi-times"></i>
+              </button>
             </div>
             <select
               v-model="accountUseYn"
@@ -1038,7 +1050,28 @@ button {
   font-size: 12px;
 }
 .search-box input {
-  padding-left: 34px;
+  padding: 0 34px;
+}
+.search-box .clear-button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  color: #87918b;
+  background: transparent;
+  place-items: center;
+}
+.search-box .clear-button:hover {
+  color: #26312b;
+}
+.search-box .clear-button i {
+  position: static;
+  transform: none;
 }
 .search-row select {
   width: 105px;
@@ -1131,6 +1164,7 @@ button {
 .account-table-wrap {
   flex: 1;
   overflow-x: auto;
+  padding: 8px 14px;
 }
 table {
   width: 100%;

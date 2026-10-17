@@ -32,11 +32,15 @@ public class JournalFileStorageService {
     }
 
     public StoredFile store(long journalId, MultipartFile file, NewFileManifest manifest) {
+        return store(Long.toString(journalId), file, manifest);
+    }
+
+    public StoredFile store(String ownerPath, MultipartFile file, NewFileManifest manifest) {
         validate(file, manifest);
         String original = safeName(file.getOriginalFilename());
         String extension = extension(original);
         String stored = UUID.randomUUID() + (extension.isEmpty()?"":"."+extension);
-        String finalPath = journalId + "/" + stored;
+        String finalPath = ownerPath + "/" + stored;
         String stagingPath = ".staging/" + UUID.randomUUID() + ".upload";
         Path target = resolve(stagingPath);
         try { Files.createDirectories(target.getParent()); file.transferTo(target); }
