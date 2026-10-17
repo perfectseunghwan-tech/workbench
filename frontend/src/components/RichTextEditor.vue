@@ -30,6 +30,64 @@ const emit = defineEmits<{
 }>()
 
 const objectUrls = new Set<string>()
+const tableCellStyleAttributes = {
+  backgroundColor: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.backgroundColor || null,
+    rendered: false,
+  },
+  borderColor: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.borderColor || null,
+    rendered: false,
+  },
+  borderWidth: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.borderWidth || null,
+    rendered: false,
+  },
+  borderStyle: {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.style.borderStyle || null,
+    rendered: false,
+  },
+}
+function cellStyle(attributes: Record<string, unknown>) {
+  return [
+    attributes.backgroundColor ? `background-color: ${attributes.backgroundColor}` : '',
+    attributes.borderColor ? `border-color: ${attributes.borderColor}` : '',
+    attributes.borderWidth ? `border-width: ${attributes.borderWidth}` : '',
+    attributes.borderStyle ? `border-style: ${attributes.borderStyle}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ')
+}
+const StyledTableCell = TableCell.extend({
+  addAttributes() {
+    return { ...this.parent?.(), ...tableCellStyleAttributes }
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    const style = cellStyle(node.attrs)
+    return [
+      'td',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, style ? { style } : {}),
+      0,
+    ]
+  },
+})
+const StyledTableHeader = TableHeader.extend({
+  addAttributes() {
+    return { ...this.parent?.(), ...tableCellStyleAttributes }
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    const style = cellStyle(node.attrs)
+    return [
+      'th',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, style ? { style } : {}),
+      0,
+    ]
+  },
+})
 const imageNode = Node.create({
   name: 'journalImage',
   group: 'block',
@@ -101,8 +159,8 @@ const editor = useEditor({
     StarterKit,
     Table.configure({ resizable: true }),
     TableRow,
-    TableHeader,
-    TableCell,
+    StyledTableHeader,
+    StyledTableCell,
     ...(props.imagesEnabled ? [imageNode] : []),
   ],
   editorProps: {
@@ -156,6 +214,32 @@ function editAlt() {
   const current = String(editor.value?.getAttributes('journalImage').alt || '')
   const alt = window.prompt('이미지 대체 텍스트', current)
   if (alt !== null) editor.value?.chain().focus().updateAttributes('journalImage', { alt }).run()
+}
+
+function setCellAttribute(name: string, value: string | null) {
+  editor.value?.chain().focus().setCellAttribute(name, value).run()
+}
+
+function setCellColor(name: 'backgroundColor' | 'borderColor', event: Event) {
+  setCellAttribute(name, (event.target as HTMLInputElement).value)
+}
+
+function currentCellAttribute(name: string, fallback: string) {
+  const currentEditor = editor.value
+  if (!currentEditor) return fallback
+  const nodeName = currentEditor.isActive('tableHeader') ? 'tableHeader' : 'tableCell'
+  return String(currentEditor.getAttributes(nodeName)[name] || fallback)
+}
+
+function clearCellStyle() {
+  const chain = editor.value?.chain().focus()
+  if (!chain) return
+  chain
+    .setCellAttribute('backgroundColor', null)
+    .setCellAttribute('borderColor', null)
+    .setCellAttribute('borderWidth', null)
+    .setCellAttribute('borderStyle', null)
+    .run()
 }
 
 onBeforeUnmount(() => {
@@ -266,6 +350,45 @@ onBeforeUnmount(() => {
         병합</button
       ><button type="button" aria-label="셀 분할" @click="editor.chain().focus().splitCell().run()">
         분할</button
+      ><template v-if="editor.isActive('table')"
+        ><span class="editor-toolbar-divider" aria-hidden="true"></span
+        ><label class="editor-color-control" title="선택한 셀 배경색">
+          배경
+          <input
+            type="color"
+            :value="currentCellAttribute('backgroundColor', '#ffffff')"
+            aria-label="셀 배경색"
+            @input="setCellColor('backgroundColor', $event)" /></label
+        ><label class="editor-color-control" title="선택한 셀 테두리 색">
+          선
+          <input
+            type="color"
+            :value="currentCellAttribute('borderColor', '#cbd5e1')"
+            aria-label="셀 테두리 색"
+            @input="setCellColor('borderColor', $event)" /></label
+        ><select
+          :value="currentCellAttribute('borderWidth', '1px')"
+          aria-label="셀 테두리 굵기"
+          title="선택한 셀 테두리 굵기"
+          @change="setCellAttribute('borderWidth', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="1px">선 1px</option>
+          <option value="2px">선 2px</option>
+          <option value="3px">선 3px</option>
+          <option value="4px">선 4px</option></select
+        ><select
+          :value="currentCellAttribute('borderStyle', 'solid')"
+          aria-label="셀 테두리 모양"
+          title="선택한 셀 테두리 모양"
+          @change="setCellAttribute('borderStyle', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="solid">실선</option>
+          <option value="dashed">파선</option>
+          <option value="dotted">점선</option>
+          <option value="double">이중선</option></select
+        ><button type="button" aria-label="셀 서식 초기화" @click="clearCellStyle">
+          셀 서식 초기화
+        </button></template
       ><template v-if="imagesEnabled"
         ><label class="editor-file"
           >이미지<input

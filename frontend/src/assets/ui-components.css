@@ -125,7 +125,88 @@
   padding: 0;
 }
 .rich-editor .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
   white-space: normal;
+}
+.rich-editor .tiptap th,
+.rich-editor .tiptap td {
+  position: relative;
+  min-width: 80px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  vertical-align: top;
+}
+.rich-editor .tiptap th {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+.rich-editor .tiptap th > :first-child,
+.rich-editor .tiptap td > :first-child {
+  margin-top: 0;
+}
+.rich-editor .tiptap th > :last-child,
+.rich-editor .tiptap td > :last-child {
+  margin-bottom: 0;
+}
+.rich-editor .tiptap .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  content: '';
+  background: rgb(59 130 246 / 14%);
+  pointer-events: none;
+}
+.rich-editor .tableWrapper {
+  overflow-x: auto;
+}
+.rich-editor .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: var(--app-primary-500);
+  pointer-events: none;
+}
+.rich-editor.resize-cursor {
+  cursor: col-resize;
+}
+.rich-editor .editor-toolbar select {
+  width: auto;
+  height: 32px;
+  padding: 0 28px 0 9px;
+  color: #475569;
+  background-color: #fff;
+  border: 1px solid var(--app-border);
+}
+.rich-editor .editor-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  margin: 4px 2px;
+  background: var(--app-border);
+}
+.rich-editor .editor-color-control {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: #475569;
+  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rich-editor .editor-color-control input[type='color'] {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  border: 0;
+  cursor: pointer;
 }
 .rich-editor .tiptap img {
   display: block;

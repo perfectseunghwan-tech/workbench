@@ -36,10 +36,29 @@ const existing = ref<JournalFile[]>([])
 const pending = ref<Pending[]>([])
 const strategyOptions = ref<StrategyLink[]>([])
 const relatedStrategyIds = ref<number[]>([])
+const pendingRelatedStrategyIds = ref<number[]>([])
+const strategyKeyword = ref('')
+const showStrategyPicker = ref(false)
 const loading = ref(!!id.value)
 const saving = ref(false)
 const error = ref('')
 const dirty = ref(false)
+const selectedStrategies = computed(() =>
+  relatedStrategyIds.value
+    .map((strategyId) =>
+      strategyOptions.value.find((strategy) => strategy.strategyId === strategyId),
+    )
+    .filter((strategy): strategy is StrategyLink => Boolean(strategy)),
+)
+const filteredStrategies = computed(() => {
+  const keyword = strategyKeyword.value.trim().toLowerCase()
+  return strategyOptions.value.filter(
+    (strategy) =>
+      !keyword ||
+      strategy.title.toLowerCase().includes(keyword) ||
+      statusLabel[strategy.status]?.toLowerCase().includes(keyword),
+  )
+})
 watch([date, title, content, existing, pending, relatedStrategyIds], () => (dirty.value = true), {
   deep: true,
 })
@@ -67,6 +86,21 @@ function addImage(file: File, key: string) {
     return
   }
   pending.value.push({ key, file, type: 'IMAGE' })
+}
+function openStrategyPicker() {
+  pendingRelatedStrategyIds.value = [...relatedStrategyIds.value]
+  strategyKeyword.value = ''
+  showStrategyPicker.value = true
+}
+function closeStrategyPicker() {
+  showStrategyPicker.value = false
+}
+function confirmStrategySelection() {
+  relatedStrategyIds.value = [...pendingRelatedStrategyIds.value]
+  closeStrategyPicker()
+}
+function removeStrategy(strategyId: number) {
+  relatedStrategyIds.value = relatedStrategyIds.value.filter((id) => id !== strategyId)
 }
 function addFiles(e: Event) {
   const input = e.target as HTMLInputElement
@@ -204,15 +238,29 @@ onBeforeRouteLeave(
               <h2>관련 투자전략</h2>
               <p>이 일지와 연결할 전략을 복수 선택할 수 있습니다.</p>
             </div>
+            <button class="secondary" type="button" @click="openStrategyPicker">
+              <i class="pi pi-search"></i> 투자전략 검색
+            </button>
           </div>
-          <div class="strategy-checks">
-            <label v-for="s in strategyOptions" :key="s.strategyId"
-              ><input v-model="relatedStrategyIds" type="checkbox" :value="s.strategyId" /><span
-                >{{ s.title }} <small>{{ statusLabel[s.status] }}</small></span
-              ></label
+          <div v-if="selectedStrategies.length" class="selected-strategy-list">
+            <div
+              v-for="strategy in selectedStrategies"
+              :key="strategy.strategyId"
+              class="selected-strategy-item"
             >
-            <p v-if="!strategyOptions.length" class="journal-empty">연결할 투자전략이 없습니다.</p>
+              <span
+                ><strong>{{ strategy.title }}</strong
+                ><small>{{ statusLabel[strategy.status] }}</small></span
+              ><button
+                type="button"
+                :aria-label="`${strategy.title} 선택 해제`"
+                @click="removeStrategy(strategy.strategyId)"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
           </div>
+          <p v-else class="selected-strategy-empty">선택된 투자전략이 없습니다.</p>
         </div>
         <label class="field-title">본문</label
         ><RichTextEditor
@@ -287,31 +335,206 @@ onBeforeRouteLeave(
       </section>
       <JournalTradeTable :date="date"
     /></template>
+    <div
+      v-if="showStrategyPicker"
+      class="strategy-picker-backdrop"
+      @click.self="closeStrategyPicker"
+    >
+      <section class="strategy-picker-modal" role="dialog" aria-modal="true">
+        <header>
+          <h2>관련 투자전략 선택</h2>
+          <button type="button" aria-label="투자전략 검색 닫기" @click="closeStrategyPicker">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+        <div class="strategy-picker-body">
+          <div class="strategy-search-field">
+            <i class="pi pi-search"></i>
+            <input v-model="strategyKeyword" placeholder="전략명 또는 상태 검색" autofocus />
+          </div>
+          <div v-if="filteredStrategies.length" class="strategy-options">
+            <label
+              v-for="strategy in filteredStrategies"
+              :key="strategy.strategyId"
+              class="strategy-option"
+            >
+              <input
+                v-model="pendingRelatedStrategyIds"
+                type="checkbox"
+                :value="strategy.strategyId"
+              /><span
+                ><strong>{{ strategy.title }}</strong
+                ><small>{{ statusLabel[strategy.status] }}</small></span
+              >
+            </label>
+          </div>
+          <p v-else class="selected-strategy-empty">
+            {{ strategyOptions.length ? '검색 결과가 없습니다.' : '연결할 투자전략이 없습니다.' }}
+          </p>
+        </div>
+        <footer>
+          <span class="strategy-selection-count"
+            >{{ pendingRelatedStrategyIds.length }}개 선택</span
+          >
+          <button class="secondary" type="button" @click="closeStrategyPicker">취소</button>
+          <button class="primary" type="button" @click="confirmStrategySelection">선택 완료</button>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>
 <style scoped>
-.strategy-checks {
+.selected-strategy-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 7px;
+  gap: 8px;
   margin-top: 12px;
 }
-.strategy-checks label {
+.selected-strategy-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--app-primary-50);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+.selected-strategy-item span {
+  display: grid;
+  min-width: 0;
+}
+.selected-strategy-item small,
+.strategy-option small {
+  color: var(--app-text-muted);
+}
+.selected-strategy-item button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  padding: 0;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid var(--app-border);
+}
+.selected-strategy-empty {
+  margin: 12px 0 0;
+  padding: 18px;
+  color: var(--app-text-muted);
+  background: #f8fafc;
+  border: 1px dashed var(--app-border-strong);
+  border-radius: var(--app-radius);
+  text-align: center;
+}
+.strategy-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(15 23 42 / 56%);
+}
+.strategy-picker-modal {
+  display: flex;
+  width: min(900px, 100%);
+  max-height: 90vh;
+  flex-direction: column;
+  background: #fff;
+  border-radius: var(--app-radius);
+  box-shadow: 0 24px 70px rgb(15 23 42 / 22%);
+}
+.strategy-picker-modal > header,
+.strategy-picker-modal > footer {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 18px 22px;
+}
+.strategy-picker-modal > header {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--app-border);
+}
+.strategy-picker-modal > header h2 {
+  margin: 0;
+}
+.strategy-picker-modal > header button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid var(--app-border);
+}
+.strategy-picker-modal > footer {
+  justify-content: flex-end;
+  border-top: 1px solid var(--app-border);
+}
+.strategy-picker-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 22px;
+}
+.strategy-search-field {
+  position: relative;
+  margin-bottom: 12px;
+}
+.strategy-search-field i {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  color: var(--app-text-muted);
+  transform: translateY(-50%);
+}
+.strategy-search-field input {
+  width: 100%;
+  padding-left: 38px;
+}
+.strategy-options {
+  display: grid;
+  max-height: min(420px, 50vh);
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px;
+  overflow: auto;
   padding: 10px;
   background: #f8fafc;
   border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
 }
-.strategy-checks input {
+.strategy-option {
+  display: flex !important;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  background: #fff;
+  border-radius: var(--app-radius);
+}
+.strategy-option input {
   width: 17px;
   height: 17px;
 }
-.strategy-checks span {
+.strategy-option span {
   display: grid;
 }
-.strategy-checks small {
+.strategy-selection-count {
+  margin-right: auto;
   color: var(--app-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (max-width: 650px) {
+  .strategy-picker-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+  .strategy-picker-modal {
+    max-height: 94vh;
+    border-radius: var(--app-radius) var(--app-radius) 0 0;
+  }
 }
 </style>
