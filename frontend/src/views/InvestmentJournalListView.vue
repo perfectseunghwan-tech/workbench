@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import DataTable from "primevue/datatable";
+import type { DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
 import {
   investmentJournalApi,
@@ -16,12 +17,21 @@ const page = ref(0);
 const total = ref(0);
 const loading = ref(false);
 const error = ref("");
+type JournalSortField =
+  "journalDate" | "journalTitle" | "fileCount" | "createdAt" | "updatedAt";
+const sortField = ref<JournalSortField>("journalDate");
+const sortOrder = ref<1 | -1>(-1);
 const dateTime = (v: string) => new Date(v).toLocaleString("ko-KR");
 async function load() {
   loading.value = true;
   error.value = "";
   try {
-    const p = new URLSearchParams({ page: String(page.value), size: "20" });
+    const p = new URLSearchParams({
+      page: String(page.value),
+      size: "20",
+      sortField: sortField.value,
+      sortDirection: sortOrder.value === 1 ? "asc" : "desc",
+    });
     if (from.value) p.set("dateFrom", from.value);
     if (to.value) p.set("dateTo", to.value);
     if (keyword.value.trim()) p.set("keyword", keyword.value.trim());
@@ -44,6 +54,28 @@ function reset() {
   to.value = "";
   keyword.value = "";
   search();
+}
+async function onPage(event: { page: number }) {
+  page.value = event.page;
+  await load();
+}
+async function onSort(event: DataTableSortEvent) {
+  const fields: JournalSortField[] = [
+    "journalDate",
+    "journalTitle",
+    "fileCount",
+    "createdAt",
+    "updatedAt",
+  ];
+  if (
+    typeof event.sortField !== "string" ||
+    !fields.includes(event.sortField as JournalSortField)
+  )
+    return;
+  sortField.value = event.sortField as JournalSortField;
+  sortOrder.value = event.sortOrder === 1 ? 1 : -1;
+  page.value = 0;
+  await load();
 }
 async function remove(row: JournalSummary) {
   if (
@@ -89,6 +121,7 @@ onMounted(load);
     <p v-if="error" class="journal-alert">{{ error }}</p>
     <section class="journal-card">
       <DataTable
+        class="journal-list-table"
         :value="rows"
         :loading="loading"
         data-key="journalId"
@@ -97,13 +130,16 @@ onMounted(load);
         :rows="20"
         :total-records="total"
         :first="page * 20"
-        @page="
-          page = $event.page;
-          load();
-        "
+        :sort-field="sortField"
+        :sort-order="sortOrder"
+        @page="onPage"
+        @sort="onSort"
         @row-click="router.push(`/journals/${$event.data.journalId}`)"
         table-style="min-width: 800px"
-        ><Column field="journalDate" header="일지일자" /><Column header="제목"
+        ><Column field="journalDate" header="일지일자" sortable /><Column
+          field="journalTitle"
+          header="제목"
+          sortable
           ><template #body="{ data }"
             ><button
               class="link-button"
@@ -112,11 +148,14 @@ onMounted(load);
               {{ data.journalTitle || "제목 없음" }}
             </button></template
           ></Column
-        ><Column field="fileCount" header="첨부 수" /><Column header="작성일시"
+        ><Column field="fileCount" header="첨부 수" sortable /><Column
+          field="createdAt"
+          header="작성일시"
+          sortable
           ><template #body="{ data }">{{
             dateTime(data.createdAt)
           }}</template></Column
-        ><Column header="수정일시"
+        ><Column field="updatedAt" header="수정일시" sortable
           ><template #body="{ data }">{{
             dateTime(data.updatedAt)
           }}</template></Column
@@ -138,3 +177,13 @@ onMounted(load);
     </section>
   </div>
 </template>
+
+<style scoped>
+.journal-list-table :deep(.p-datatable-thead > tr > th) {
+  text-align: left !important;
+}
+
+.journal-list-table :deep(.p-datatable-column-header-content) {
+  justify-content: flex-start !important;
+}
+</style>

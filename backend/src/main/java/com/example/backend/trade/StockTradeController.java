@@ -36,12 +36,14 @@ public class StockTradeController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String tradeType,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "tradeDate") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
         return service.findAll(new TradeFilter(
                 dateFrom, dateTo, brokerageId, accountId, stockId,
-                marketCode, keyword, tradeType, safePage, safeSize));
+                marketCode, keyword, tradeType, safePage, safeSize, sortField, sortDirection));
     }
 
     @GetMapping("/stock-trades/{tradeId}")

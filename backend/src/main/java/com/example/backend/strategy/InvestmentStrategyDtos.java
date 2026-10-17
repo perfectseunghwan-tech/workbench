@@ -10,7 +10,7 @@ public final class InvestmentStrategyDtos {
     private InvestmentStrategyDtos() {}
 
     public record StrategyFilter(String keyword, String strategyScope, String categoryCode,
-            String status, String sort, int page, int size) {}
+            String status, String sortField, String sortDirection, int page, int size) {}
     public record StrategySaveRequest(String strategyScope, List<String> categoryCodes, String title,
             JsonNode content, String status, List<Long> stockIds) {}
     public record PostSaveRequest(String postType, String title, JsonNode content, LocalDate postDate) {}

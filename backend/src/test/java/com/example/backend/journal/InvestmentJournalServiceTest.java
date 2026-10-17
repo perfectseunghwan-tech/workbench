@@ -19,7 +19,8 @@ class InvestmentJournalServiceTest {
     @Test
     void rejectsReversedSearchDates() {
         assertThatThrownBy(() -> service.findAll(new JournalSearchFilter(
-                LocalDate.of(2026, 10, 2), LocalDate.of(2026, 10, 1), null, 0, 20)))
+                LocalDate.of(2026, 10, 2), LocalDate.of(2026, 10, 1), null,
+                0, 20, "journalDate", "desc")))
                 .isInstanceOf(ApiException.class).hasMessageContaining("시작일");
     }
 

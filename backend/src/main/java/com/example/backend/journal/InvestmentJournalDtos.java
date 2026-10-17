@@ -8,7 +8,8 @@ import java.util.List;
 public final class InvestmentJournalDtos {
     private InvestmentJournalDtos() {}
 
-    public record JournalSearchFilter(LocalDate dateFrom, LocalDate dateTo, String keyword, int page, int size) {}
+    public record JournalSearchFilter(LocalDate dateFrom, LocalDate dateTo, String keyword,
+            int page, int size, String sortField, String sortDirection) {}
     public record NewFileManifest(String uploadKey, String fileType, String originalFileName, int sortOrder) {}
     public record JournalSaveRequest(LocalDate journalDate, String journalTitle, String contentFormat,
             JsonNode journalContent, List<Long> retainedFileIds, List<NewFileManifest> newFiles,

@@ -43,7 +43,7 @@
   justify-content: center;
   gap: 6px;
   padding: 0 14px;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -72,7 +72,9 @@
 }
 .filters {
   display: grid;
-  grid-template-columns: minmax(230px, 2fr) repeat(4, minmax(120px, 1fr)) auto auto;
+  grid-template-columns:
+    minmax(230px, 2fr) repeat(4, minmax(120px, 1fr))
+    auto auto;
   gap: 10px;
 }
 .strategy-page input,
@@ -83,7 +85,7 @@
   color: var(--app-text);
   background: #fff;
   border: 1px solid var(--app-border-strong);
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .table-card {
   padding: 0;
@@ -114,7 +116,7 @@ td small {
   padding: 4px 8px;
   color: var(--app-primary-800);
   background: var(--app-primary-50);
-  border-radius: 999px;
+  border-radius: 0.2rem;
   font-size: 11px;
   font-weight: 750;
 }
@@ -122,7 +124,7 @@ td small {
 .trade {
   display: inline-flex;
   padding: 4px 9px;
-  border-radius: 999px;
+  border-radius: 0.2rem;
   font-size: 11px;
   font-weight: 800;
 }
@@ -151,7 +153,7 @@ td small {
   color: #991b1b;
   background: var(--app-danger-soft);
   border: 1px solid #fecaca;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .empty {
   padding: 28px;
@@ -186,7 +188,7 @@ td small {
   margin: 0;
   padding: 16px;
   border: 1px solid var(--app-border);
-  border-radius: 0.65rem;
+  border-radius: 0.2rem;
 }
 .strategy-form legend {
   padding: 0 6px;
@@ -217,12 +219,12 @@ td small {
   padding: 10px;
   background: #f8fafc;
   border: 1px solid var(--app-border);
-  border-radius: 0.65rem;
+  border-radius: 0.2rem;
 }
 .stock-options label {
   padding: 8px;
   background: #fff;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .stock-options span {
   display: grid;
@@ -239,7 +241,7 @@ td small {
 .strategy-editor {
   overflow: hidden;
   border: 1px solid var(--app-border-strong);
-  border-radius: 0.65rem;
+  border-radius: 0.2rem;
 }
 .strategy-toolbar {
   display: flex;
@@ -255,7 +257,7 @@ td small {
   color: #475569;
   background: #fff;
   border: 1px solid var(--app-border);
-  border-radius: 0.4rem;
+  border-radius: 0.2rem;
 }
 .strategy-editor :deep(.tiptap) {
   min-height: 300px;
@@ -322,7 +324,7 @@ td small {
   margin-bottom: 14px;
   padding: 5px;
   background: #eaf0f8;
-  border-radius: 0.7rem;
+  border-radius: 0.2rem;
 }
 .strategy-tabs button {
   flex: 1;
@@ -330,7 +332,7 @@ td small {
   color: #64748b;
   background: transparent;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   font-weight: 750;
 }
 .strategy-tabs button.active {
@@ -374,7 +376,10 @@ td small {
 .strategy-page th {
   color: var(--app-primary-800);
   background: var(--app-primary-50);
-  text-align: center;
+  text-align: left;
+}
+.strategy-page :deep(.p-datatable-column-header-content) {
+  justify-content: flex-start !important;
 }
 .number {
   text-align: right !important;
@@ -403,7 +408,7 @@ td small {
   color: var(--app-text);
   background: #fff;
   border: 1px solid var(--app-border);
-  border-radius: 0.55rem;
+  border-radius: 0.2rem;
   text-align: left;
 }
 .journal-links time,
@@ -428,7 +433,7 @@ td small {
   max-height: 90vh;
   flex-direction: column;
   background: #fff;
-  border-radius: 1rem;
+  border-radius: 0.2rem;
   box-shadow: 0 24px 70px rgb(15 23 42/0.22);
 }
 .strategy-modal.wide {
@@ -454,7 +459,7 @@ td small {
   color: #64748b;
   background: #fff;
   border: 1px solid var(--app-border);
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .strategy-modal > footer {
   border-top: 1px solid var(--app-border);
@@ -482,7 +487,7 @@ td small {
   gap: 10px;
   padding: 10px;
   border: 1px solid var(--app-border);
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .journal-select span {
   display: grid;
@@ -539,6 +544,6 @@ td small {
   }
   .strategy-modal {
     max-height: 94vh;
-    border-radius: 1rem 1rem 0 0;
+    border-radius: 0.2rem 0.2rem 0 0;
   }
 }

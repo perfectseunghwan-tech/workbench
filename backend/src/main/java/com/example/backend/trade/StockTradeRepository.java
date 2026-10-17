@@ -43,13 +43,31 @@ public class StockTradeRepository {
         parameters.put("offset", filter.page() * filter.size());
 
         List<TradeResponse> content = jdbc.query(
-                TRADE_SELECT + where + " ORDER BY t.trade_date DESC, t.trade_id DESC LIMIT :limit OFFSET :offset",
+                TRADE_SELECT + where + " ORDER BY " + orderBy(filter.sortField(), filter.sortDirection())
+                        + " LIMIT :limit OFFSET :offset",
                 parameters,
                 tradeMapper());
         Long total = jdbc.queryForObject("SELECT COUNT(*) " + TRADE_FROM + where, parameters, Long.class);
         long count = total == null ? 0 : total;
         int totalPages = count == 0 ? 0 : (int) Math.ceil((double) count / filter.size());
         return new PageResponse<>(content, count, totalPages, filter.page(), filter.size());
+    }
+
+    private String orderBy(String sortField, String sortDirection) {
+        String column = switch (sortField) {
+            case "tradeType" -> "t.trade_type";
+            case "stockName" -> "s.stock_name";
+            case "accountName" -> "a.account_name";
+            case "executionQuantity" -> "t.execution_quantity";
+            case "executionPrice" -> "t.execution_price";
+            case "executionAmount" -> "t.execution_amount";
+            case "purchasePrice" -> "t.purchase_price";
+            case "realizedProfitLoss" -> "t.realized_profit_loss";
+            case "tradeMemo" -> "t.trade_memo";
+            default -> "t.trade_date";
+        };
+        String direction = "asc".equalsIgnoreCase(sortDirection) ? "ASC" : "DESC";
+        return column + " " + direction + " NULLS LAST, t.trade_id DESC";
     }
 
     public Optional<TradeResponse> findById(long tradeId) {

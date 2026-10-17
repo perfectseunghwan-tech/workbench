@@ -29,7 +29,9 @@ public class InvestmentStrategyRepository {
         if (text(filter.categoryCode())) { where.append(" AND :category=ANY(s.category_codes)"); p.put("category",filter.categoryCode()); }
         if (text(filter.status())) { where.append(" AND s.status=:status"); p.put("status",filter.status()); }
         p.put("limit",filter.size()); p.put("offset",filter.page()*filter.size());
-        String order = switch (filter.sort()==null?"":filter.sort()) { case "created" -> "s.created_at DESC"; case "title" -> "s.title ASC"; default -> "latest_activity_at DESC"; };
+        String column = switch (filter.sortField()==null?"":filter.sortField()) { case "title" -> "s.title"; case "strategyScope" -> "s.strategy_scope"; case "status" -> "s.status"; case "createdAt" -> "s.created_at"; default -> "latest_activity_at"; };
+        String direction = "asc".equalsIgnoreCase(filter.sortDirection()) ? "ASC" : "DESC";
+        String order = column + " " + direction + " NULLS LAST";
         String select = """
                 SELECT s.strategy_id,s.strategy_scope,s.category_codes,s.title,s.content,s.status,s.version_no,s.created_at,s.updated_at,
                        GREATEST(s.updated_at,COALESCE((SELECT MAX(p.updated_at) FROM investment_strategy_post p WHERE p.strategy_id=s.strategy_id),s.updated_at)) latest_activity_at

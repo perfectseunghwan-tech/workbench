@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 .required-label {
   display: inline-flex;
@@ -36,7 +36,7 @@
     --app-success-soft: #f0fdf4;
     --app-warning: #b45309;
     --app-warning-soft: #fffbeb;
-    --app-radius: 0.75rem;
+    --app-radius: 0.2rem;
     --app-shadow: 0 8px 28px rgb(15 23 42 / 0.06);
     --p-primary-color: var(--app-primary-600);
     --p-primary-contrast-color: #ffffff;
@@ -62,11 +62,11 @@
     color: var(--app-text);
     background: var(--app-canvas);
     font-family:
-      'Pretendard Variable',
+      "Pretendard Variable",
       Pretendard,
       -apple-system,
       BlinkMacSystemFont,
-      'Segoe UI',
+      "Segoe UI",
       sans-serif;
     font-size: 14px;
     font-weight: 400;
@@ -184,7 +184,7 @@
   color: var(--app-text);
   background: #fff;
   border: 1px solid var(--app-border-strong);
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .journal-page button,
 .journal-page .file-picker,
@@ -197,7 +197,7 @@
   gap: 6px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
@@ -227,7 +227,7 @@
   color: #991b1b;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .journal-empty {
   padding: 24px;
@@ -259,7 +259,7 @@
 .trade-badge {
   display: inline-block;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 0.2rem;
   font-size: 11px;
   font-weight: 800;
 }
@@ -284,7 +284,7 @@
 .journal-editor {
   overflow: hidden;
   border: 1px solid var(--app-border-strong);
-  border-radius: 0.65rem;
+  border-radius: 0.2rem;
 }
 .editor-toolbar {
   display: flex;
@@ -334,7 +334,7 @@
   max-width: 100%;
   height: auto;
   margin: 14px auto;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
 }
 .attachments {
   margin-top: 22px;
@@ -412,7 +412,7 @@
 
 /* PrimeVue foundation */
 .p-button {
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   font-weight: 700;
 }
 
@@ -420,7 +420,7 @@
 .p-select,
 .p-textarea {
   border-color: var(--app-border-strong);
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   box-shadow: none;
 }
 
@@ -483,8 +483,12 @@
 
 .app-shell .brand-symbol {
   color: #fff !important;
-  background: linear-gradient(145deg, var(--app-primary-500), var(--app-primary-700)) !important;
-  border-radius: 0.625rem !important;
+  background: linear-gradient(
+    145deg,
+    var(--app-primary-500),
+    var(--app-primary-700)
+  ) !important;
+  border-radius: 0.2rem !important;
   box-shadow: 0 6px 16px rgb(37 99 235 / 0.22) !important;
 }
 
@@ -498,7 +502,7 @@
 
 .app-shell .nav-item {
   color: var(--app-text-muted) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 .app-shell .nav-item > i {
@@ -585,12 +589,19 @@
   padding: 0 !important;
 }
 
-:where(.trade-page, .settings-page) :where(.section-label, .page-heading > div > p) {
+:where(.trade-page, .settings-page)
+  :where(.section-label, .page-heading > div > p) {
   color: var(--app-primary-700) !important;
 }
 
 :where(.trade-page, .settings-page)
-  :where(.hero h1, .page-heading h1, .trade-modal h2, .stock-picker-modal h2, .modal h2) {
+  :where(
+    .hero h1,
+    .page-heading h1,
+    .trade-modal h2,
+    .stock-picker-modal h2,
+    .modal h2
+  ) {
   color: #0f172a !important;
   font-family: inherit !important;
   font-weight: 800 !important;
@@ -617,7 +628,12 @@
 }
 
 :where(.trade-page, .settings-page, .journal-page)
-  :where(.hero h1, .page-heading h1, .page-shell > header h1, .journal-page-head h1) {
+  :where(
+    .hero h1,
+    .page-heading h1,
+    .page-shell > header h1,
+    .journal-page-head h1
+  ) {
   font-family: inherit !important;
   font-size: clamp(24px, 2.4vw, 32px) !important;
   font-weight: 800 !important;
@@ -625,7 +641,12 @@
 }
 
 :where(.trade-page, .settings-page, .journal-page)
-  :where(.section-label, .page-heading > div > p, .page-shell > header p, .journal-page-head p) {
+  :where(
+    .section-label,
+    .page-heading > div > p,
+    .page-shell > header p,
+    .journal-page-head p
+  ) {
   margin: 0 0 9px !important;
   color: var(--app-primary-700) !important;
   font-size: 11px !important;
@@ -705,7 +726,7 @@
   color: var(--app-text) !important;
   background: var(--app-surface) !important;
   border-color: var(--app-border-strong) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 :where(.trade-page, .settings-page) :where(input, select) {
@@ -722,7 +743,7 @@
   min-height: 42px !important;
   color: #fff !important;
   background: var(--app-primary-600) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 .trade-page :where(.primary-button, .search-button):hover,
@@ -736,7 +757,7 @@
   color: #334155 !important;
   background: #f1f5f9 !important;
   border: 1px solid var(--app-border) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 .trade-page .row-actions button,
@@ -745,7 +766,7 @@
   color: #64748b !important;
   background: #fff !important;
   border: 1px solid var(--app-border) !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 .trade-page .row-actions button:hover,
@@ -774,7 +795,7 @@
 :where(.trade-page, .settings-page) :where(.pagination, .pager) button {
   color: #475569 !important;
   background: #f1f5f9 !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 :where(.trade-page, .settings-page) :where(.modal-backdrop) {
@@ -783,7 +804,7 @@
 
 :where(.trade-page, .settings-page) :where(.trade-modal, .modal) {
   border: 1px solid var(--app-border);
-  border-radius: 1rem !important;
+  border-radius: 0.2rem !important;
   box-shadow: 0 24px 70px rgb(15 23 42 / 0.22);
 }
 
@@ -822,7 +843,7 @@
   color: #991b1b !important;
   background: var(--app-danger-soft) !important;
   border: 1px solid #fecaca !important;
-  border-radius: 0.5rem !important;
+  border-radius: 0.2rem !important;
 }
 
 :where(.trade-page, .settings-page) :where(.empty-state, .empty) {
@@ -873,7 +894,7 @@
   padding: 40px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: 1rem;
+  border-radius: 0.2rem;
   box-shadow: var(--app-shadow);
 }
 
@@ -925,7 +946,7 @@
   padding: 18px;
   background: var(--app-surface-muted);
   border: 1px solid var(--app-border);
-  border-radius: 0.75rem;
+  border-radius: 0.2rem;
   font-size: 13px;
 }
 
@@ -953,7 +974,7 @@
   color: #fff;
   background: var(--app-primary-600);
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   font-weight: 700;
   cursor: pointer;
 }

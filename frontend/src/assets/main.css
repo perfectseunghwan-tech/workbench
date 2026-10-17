@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'primeicons/primeicons.css';
+@import "tailwindcss";
+@import "primeicons/primeicons.css";
 
 * {
   box-sizing: border-box;
@@ -24,7 +24,7 @@ body {
   max-width: 520px;
   padding: 40px;
   border: 1px solid #e1e8ef;
-  border-radius: 24px;
+  border-radius: 0.2rem;
   background: white;
   box-shadow: 0 20px 60px #243b5310;
 }
@@ -67,7 +67,7 @@ dl {
   margin: 28px 0;
   padding: 18px;
   background: #f7f9fc;
-  border-radius: 12px;
+  border-radius: 0.2rem;
   font-size: 13px;
 }
 dl div {
@@ -88,7 +88,7 @@ button {
   width: 100%;
   padding: 14px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0.2rem;
   background: #244aca;
   color: white;
   font: inherit;

@@ -21,9 +21,11 @@ class InvestmentJournalControllerTest {
             JournalSearchFilter filter = invocation.getArgument(0);
             assertThat(filter.page()).isZero();
             assertThat(filter.size()).isEqualTo(100);
+            assertThat(filter.sortField()).isEqualTo("journalDate");
+            assertThat(filter.sortDirection()).isEqualTo("desc");
             return new JournalPageResponse(List.of(), 0, 0, filter.page(), filter.size());
         });
-        controller.list(null, null, null, -1, 500);
+        controller.list(null, null, null, -1, 500, "journalDate", "desc");
         verify(service).findAll(any());
     }
 

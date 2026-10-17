@@ -36,13 +36,26 @@ public class InvestmentJournalRepository {
         List<JournalSummaryResponse> content = jdbc.query("""
                 SELECT j.journal_id, j.journal_date, j.journal_title, j.created_at, j.updated_at,
                        (SELECT COUNT(*) FROM investment_journal_file f WHERE f.journal_id=j.journal_id) file_count
-                """ + from + where + " ORDER BY j.journal_date DESC, j.journal_id DESC LIMIT :limit OFFSET :offset",
+                """ + from + where + " ORDER BY " + orderBy(filter.sortField(), filter.sortDirection())
+                        + " LIMIT :limit OFFSET :offset",
                 params, (rs, n) -> new JournalSummaryResponse(rs.getLong("journal_id"),
                         rs.getObject("journal_date", java.time.LocalDate.class), rs.getString("journal_title"),
                         rs.getInt("file_count"), time(rs, "created_at"), time(rs, "updated_at")));
         Long total = jdbc.queryForObject("SELECT COUNT(*)" + from + where, params, Long.class);
         long count = total == null ? 0 : total;
         return new JournalPageResponse(content, count, count == 0 ? 0 : (int)Math.ceil((double)count/filter.size()), filter.page(), filter.size());
+    }
+
+    private String orderBy(String sortField, String sortDirection) {
+        String column = switch (sortField) {
+            case "journalTitle" -> "j.journal_title";
+            case "fileCount" -> "file_count";
+            case "createdAt" -> "j.created_at";
+            case "updatedAt" -> "j.updated_at";
+            default -> "j.journal_date";
+        };
+        String direction = "asc".equalsIgnoreCase(sortDirection) ? "ASC" : "DESC";
+        return column + " " + direction + " NULLS LAST, j.journal_id DESC";
     }
 
     public Optional<JournalRow> findById(long id) {

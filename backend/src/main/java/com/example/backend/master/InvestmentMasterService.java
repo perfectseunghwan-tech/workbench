@@ -58,8 +58,10 @@ public class InvestmentMasterService {
 
     @Transactional(readOnly = true)
     public PageResponse<AccountResponse> findAccounts(
-            Long brokerageId, String keyword, Boolean useYn, int page, int size) {
-        return repository.findAccounts(brokerageId, keyword, useYn, page, size);
+            Long brokerageId, String keyword, Boolean useYn, int page, int size,
+            String sortField, String sortDirection) {
+        return repository.findAccounts(
+                brokerageId, keyword, useYn, page, size, sortField, sortDirection);
     }
 
     @Transactional(readOnly = true)

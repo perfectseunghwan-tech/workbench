@@ -383,7 +383,7 @@ onMounted(load);
 .panel {
   background: #fff;
   border: 1px solid #dfe4dc;
-  border-radius: 18px;
+  border-radius: 0.2rem;
   box-shadow: 0 8px 30px rgba(42, 58, 49, 0.04);
 }
 .filters {
@@ -401,7 +401,7 @@ select {
   height: 40px;
   padding: 0 11px;
   border: 1px solid #d8ded9;
-  border-radius: 8px;
+  border-radius: 0.2rem;
   background: #fcfdfb;
   font: inherit;
 }
@@ -414,7 +414,7 @@ select {
   min-height: 40px;
   padding: 0 15px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 0.2rem;
   font-weight: 700;
 }
 .primary {
@@ -436,7 +436,7 @@ select {
 }
 .status {
   padding: 4px 8px;
-  border-radius: 20px;
+  border-radius: 0.2rem;
   color: #32705f;
   background: #e6f3ed;
   font-size: 11px;
@@ -455,7 +455,7 @@ select {
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 0.2rem;
   color: #52635b;
   background: #eef1ee;
 }
@@ -470,7 +470,7 @@ select {
   color: #973f34 !important;
   background: #fff0ed;
   border: 1px solid #f2d8d2;
-  border-radius: 9px;
+  border-radius: 0.2rem;
   letter-spacing: 0 !important;
 }
 .toast {
@@ -481,7 +481,7 @@ select {
   padding: 13px 17px !important;
   color: white !important;
   background: #173f35;
-  border-radius: 9px;
+  border-radius: 0.2rem;
 }
 .backdrop {
   position: fixed;
@@ -495,7 +495,7 @@ select {
 .modal {
   width: min(520px, 100%);
   background: white;
-  border-radius: 18px;
+  border-radius: 0.2rem;
   overflow: hidden;
 }
 .modal header {
@@ -552,7 +552,7 @@ select {
     align-items: end;
   }
   .modal {
-    border-radius: 18px 18px 0 0;
+    border-radius: 0.2rem 0.2rem 0 0;
   }
 }
 </style>

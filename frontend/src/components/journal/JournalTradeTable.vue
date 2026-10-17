@@ -1,13 +1,32 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import DataTable from "primevue/datatable";
+import type {
+  DataTablePageEvent,
+  DataTableSortEvent,
+} from "primevue/datatable";
+import Column from "primevue/column";
 import { stockTradeApi, type StockTrade } from "../../services/stockTradeApi";
 const props = defineProps<{ date: string }>();
 const rows = ref<StockTrade[]>([]);
 const loading = ref(false);
 const error = ref("");
 const page = ref(0);
-const totalPages = ref(0);
+const total = ref(0);
 const tradeType = ref("");
+type TradeSortField =
+  | "tradeDate"
+  | "tradeType"
+  | "stockName"
+  | "accountName"
+  | "executionQuantity"
+  | "executionPrice"
+  | "executionAmount"
+  | "purchasePrice"
+  | "realizedProfitLoss"
+  | "tradeMemo";
+const sortField = ref<TradeSortField>("tradeDate");
+const sortOrder = ref<1 | -1>(-1);
 const number = (v: number | string | null) =>
   v == null
     ? "—"
@@ -25,11 +44,13 @@ async function load() {
       dateTo: props.date,
       page: String(page.value),
       size: "20",
+      sortField: sortField.value,
+      sortDirection: sortOrder.value === 1 ? "asc" : "desc",
     });
     if (tradeType.value) p.set("tradeType", tradeType.value);
     const r = await stockTradeApi.getTrades(p);
     rows.value = r.content;
-    totalPages.value = r.totalPages;
+    total.value = r.totalElements;
   } catch (e) {
     error.value =
       e instanceof Error ? e.message : "거래 내역을 불러오지 못했습니다.";
@@ -48,6 +69,33 @@ watch(tradeType, () => {
   page.value = 0;
   load();
 });
+async function onPage(event: DataTablePageEvent) {
+  page.value = event.page;
+  await load();
+}
+async function onSort(event: DataTableSortEvent) {
+  const fields: TradeSortField[] = [
+    "tradeDate",
+    "tradeType",
+    "stockName",
+    "accountName",
+    "executionQuantity",
+    "executionPrice",
+    "executionAmount",
+    "purchasePrice",
+    "realizedProfitLoss",
+    "tradeMemo",
+  ];
+  if (
+    typeof event.sortField !== "string" ||
+    !fields.includes(event.sortField as TradeSortField)
+  )
+    return;
+  sortField.value = event.sortField as TradeSortField;
+  sortOrder.value = event.sortOrder === 1 ? 1 : -1;
+  page.value = 0;
+  await load();
+}
 onMounted(load);
 </script>
 <template>
@@ -65,67 +113,94 @@ onMounted(load);
     </header>
     <p v-if="!date" class="journal-empty">일지일자를 선택해 주세요.</p>
     <p v-else-if="error" class="journal-alert">{{ error }}</p>
-    <p v-else-if="loading" class="journal-empty">
-      거래 내역을 불러오는 중입니다.
-    </p>
     <div v-else class="journal-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>구분</th>
-            <th>종목</th>
-            <th>증권사·계좌</th>
-            <th>체결수량</th>
-            <th>체결단가</th>
-            <th>체결금액</th>
-            <th>매입단가</th>
-            <th>실현손익</th>
-            <th>거래메모</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="r in rows" :key="r.tradeId">
-            <td>
-              <span :class="['trade-badge', r.tradeType.toLowerCase()]">{{
-                r.tradeType === "BUY" ? "매수" : "매도"
-              }}</span>
-            </td>
-            <td>{{ r.stockName }}</td>
-            <td>{{ r.brokerageName }} · {{ r.accountName }}</td>
-            <td class="number">{{ number(r.executionQuantity) }}</td>
-            <td class="number">{{ number(r.executionPrice) }}</td>
-            <td class="number">{{ number(r.executionAmount) }}</td>
-            <td class="number">{{ number(r.purchasePrice) }}</td>
-            <td class="number">{{ number(r.realizedProfitLoss) }}</td>
-            <td>{{ r.tradeMemo || "—" }}</td>
-          </tr>
-          <tr v-if="!rows.length">
-            <td colspan="9" class="journal-empty">
-              해당 날짜의 거래가 없습니다.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div v-if="totalPages > 1" class="journal-pager">
-      <button
-        :disabled="page === 0"
-        @click="
-          page--;
-          load();
-        "
+      <DataTable
+        class="journal-trade-table"
+        :value="rows"
+        data-key="tradeId"
+        :loading="loading"
+        paginator
+        lazy
+        :rows="20"
+        :first="page * 20"
+        :total-records="total"
+        :sort-field="sortField"
+        :sort-order="sortOrder"
+        scrollable
+        table-style="min-width: 1120px"
+        @page="onPage"
+        @sort="onSort"
       >
-        이전</button
-      ><span>{{ page + 1 }} / {{ totalPages }}</span
-      ><button
-        :disabled="page + 1 >= totalPages"
-        @click="
-          page++;
-          load();
-        "
-      >
-        다음
-      </button>
+        <Column field="tradeDate" header="거래일" sortable />
+        <Column field="tradeType" header="구분" sortable
+          ><template #body="{ data }"
+            ><span :class="['trade-badge', data.tradeType.toLowerCase()]">{{
+              data.tradeType === "BUY" ? "매수" : "매도"
+            }}</span></template
+          ></Column
+        >
+        <Column field="stockName" header="종목" sortable />
+        <Column field="accountName" header="증권사·계좌" sortable
+          ><template #body="{ data }"
+            >{{ data.brokerageName }} · {{ data.accountName }}</template
+          ></Column
+        >
+        <Column field="executionQuantity" header="체결수량" sortable
+          ><template #body="{ data }"
+            ><span class="number">{{
+              number(data.executionQuantity)
+            }}</span></template
+          ></Column
+        >
+        <Column field="executionPrice" header="체결단가" sortable
+          ><template #body="{ data }"
+            ><span class="number">{{
+              number(data.executionPrice)
+            }}</span></template
+          ></Column
+        >
+        <Column field="executionAmount" header="체결금액" sortable
+          ><template #body="{ data }"
+            ><span class="number">{{
+              number(data.executionAmount)
+            }}</span></template
+          ></Column
+        >
+        <Column field="purchasePrice" header="매입단가" sortable
+          ><template #body="{ data }"
+            ><span class="number">{{
+              number(data.purchasePrice)
+            }}</span></template
+          ></Column
+        >
+        <Column field="realizedProfitLoss" header="실현손익" sortable
+          ><template #body="{ data }"
+            ><span class="number">{{
+              number(data.realizedProfitLoss)
+            }}</span></template
+          ></Column
+        >
+        <Column field="tradeMemo" header="거래메모" sortable
+          ><template #body="{ data }">{{
+            data.tradeMemo || "—"
+          }}</template></Column
+        >
+        <template #empty
+          ><div class="journal-empty">
+            해당 날짜의 거래가 없습니다.
+          </div></template
+        >
+      </DataTable>
     </div>
   </section>
 </template>
+
+<style scoped>
+.journal-trade-table :deep(.p-datatable-thead > tr > th) {
+  text-align: left !important;
+}
+
+.journal-trade-table :deep(.p-datatable-column-header-content) {
+  justify-content: flex-start !important;
+}
+</style>

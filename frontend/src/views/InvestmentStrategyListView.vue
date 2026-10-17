@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import DataTable from "primevue/datatable";
+import type { DataTableSortEvent } from "primevue/datatable";
 import Column from "primevue/column";
 import {
   investmentStrategyApi,
@@ -17,11 +18,13 @@ const router = useRouter(),
   scope = ref(""),
   category = ref(""),
   status = ref(""),
-  sort = ref("updated"),
+  sort = ref<StrategySortField>("latestActivityAt"),
+  sortOrder = ref<1 | -1>(-1),
   page = ref(0),
   total = ref(0);
 const categoryName = (code: string) =>
   strategyCategories.find((x) => x[0] === code)?.[1] || code;
+type StrategySortField = "latestActivityAt" | "createdAt" | "title" | "status";
 const date = (v: string) => new Date(v).toLocaleDateString("ko-KR");
 async function load() {
   loading.value = true;
@@ -30,7 +33,8 @@ async function load() {
     const p = new URLSearchParams({
       page: String(page.value),
       size: "20",
-      sort: sort.value,
+      sortField: sort.value,
+      sortDirection: sortOrder.value === 1 ? "asc" : "desc",
     });
     if (keyword.value.trim()) p.set("keyword", keyword.value.trim());
     if (scope.value) p.set("strategyScope", scope.value);
@@ -55,8 +59,34 @@ function reset() {
   scope.value = "";
   category.value = "";
   status.value = "";
-  sort.value = "updated";
+  sort.value = "latestActivityAt";
+  sortOrder.value = -1;
   search();
+}
+function onSortPresetChange() {
+  sortOrder.value = sort.value === "title" ? 1 : -1;
+  search();
+}
+async function onPage(event: { page: number }) {
+  page.value = event.page;
+  await load();
+}
+async function onSort(event: DataTableSortEvent) {
+  const fields: StrategySortField[] = [
+    "latestActivityAt",
+    "createdAt",
+    "title",
+    "status",
+  ];
+  if (
+    typeof event.sortField !== "string" ||
+    !fields.includes(event.sortField as StrategySortField)
+  )
+    return;
+  sort.value = event.sortField as StrategySortField;
+  sortOrder.value = event.sortOrder === 1 ? 1 : -1;
+  page.value = 0;
+  await load();
 }
 async function remove(row: StrategySummary) {
   if (!confirm(`'${row.title}' 전략을 삭제하시겠습니까?`)) return;
@@ -101,10 +131,11 @@ onMounted(load);
         <option value="ACTIVE">진행 중</option>
         <option value="PAUSED">보류</option>
         <option value="CLOSED">종료</option></select
-      ><select v-model="sort">
-        <option value="updated">최근 활동순</option>
-        <option value="created">최초 작성순</option>
-        <option value="title">전략명순</option></select
+      ><select v-model="sort" @change="onSortPresetChange">
+        <option value="latestActivityAt">최근 활동순</option>
+        <option value="createdAt">최초 작성순</option>
+        <option value="title">전략명순</option>
+        <option value="status">상태순</option></select
       ><button class="primary" @click="search">조회</button
       ><button class="secondary" @click="reset">초기화</button>
     </section>
@@ -119,13 +150,13 @@ onMounted(load);
         :rows="20"
         :total-records="total"
         :first="page * 20"
-        @page="
-          page = $event.page;
-          load();
-        "
+        :sort-field="sort"
+        :sort-order="sortOrder"
+        @page="onPage"
+        @sort="onSort"
         @row-click="router.push(`/strategies/${$event.data.strategyId}`)"
         table-style="min-width: 980px"
-        ><Column header="전략"
+        ><Column field="title" header="전략" sortable
           ><template #body="{ data }"
             ><button
               class="title-link"
@@ -147,7 +178,7 @@ onMounted(load);
               }}</span>
             </div></template
           ></Column
-        ><Column header="상태"
+        ><Column field="status" header="상태" sortable
           ><template #body="{ data }"
             ><span class="status" :class="data.status.toLowerCase()">{{
               statusLabel[data.status]
@@ -159,7 +190,7 @@ onMounted(load);
               .map((s: StrategySummary["stocks"][number]) => s.stockName)
               .join(", ") || "—"
           }}</template></Column
-        ><Column header="최근 활동"
+        ><Column field="latestActivityAt" header="최근 활동" sortable
           ><template #body="{ data }">{{
             date(data.latestActivityAt)
           }}</template></Column

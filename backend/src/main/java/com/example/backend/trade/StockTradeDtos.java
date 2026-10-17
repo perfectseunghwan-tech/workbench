@@ -54,7 +54,9 @@ public final class StockTradeDtos {
             String keyword,
             String tradeType,
             int page,
-            int size) {
+            int size,
+            String sortField,
+            String sortDirection) {
     }
 
     public record PageResponse<T>(

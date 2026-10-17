@@ -127,14 +127,16 @@ public class InvestmentMasterRepository {
     }
 
     public PageResponse<AccountResponse> findAccounts(
-            Long brokerageId, String keyword, Boolean useYn, int page, int size) {
+            Long brokerageId, String keyword, Boolean useYn, int page, int size,
+            String sortField, String sortDirection) {
         Map<String, Object> parameters = new HashMap<>();
         String where = accountWhere(brokerageId, keyword, useYn, parameters);
         parameters.put("limit", size);
         parameters.put("offset", page * size);
         List<AccountResponse> content = jdbc.query(
                 ACCOUNT_SELECT + where
-                        + " ORDER BY b.brokerage_name, a.account_name LIMIT :limit OFFSET :offset",
+                        + " ORDER BY " + accountOrderBy(sortField, sortDirection)
+                        + " LIMIT :limit OFFSET :offset",
                 parameters,
                 accountMapper());
         Long total = jdbc.queryForObject(
@@ -143,6 +145,17 @@ public class InvestmentMasterRepository {
                 parameters,
                 Long.class);
         return page(content, total, page, size);
+    }
+
+    private String accountOrderBy(String sortField, String sortDirection) {
+        String column = switch (sortField) {
+            case "accountName" -> "a.account_name";
+            case "latestMemoContent" -> "m.memo_content";
+            case "useYn" -> "a.use_yn";
+            default -> "a.account_number";
+        };
+        String direction = "desc".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
+        return column + " " + direction + " NULLS LAST, a.account_id ASC";
     }
 
     public Optional<AccountResponse> findAccountById(long accountId) {

@@ -62,8 +62,11 @@ public class InvestmentMasterController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean useYn,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return service.findAccounts(brokerageId, keyword, useYn, safePage(page), safeSize(size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "accountNumber") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+        return service.findAccounts(
+                brokerageId, keyword, useYn, safePage(page), safeSize(size), sortField, sortDirection);
     }
 
     @GetMapping("/investment-accounts/{accountId}")

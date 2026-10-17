@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 public class InvestmentStrategyController {
     private final InvestmentStrategyService service;
     public InvestmentStrategyController(InvestmentStrategyService service){this.service=service;}
-    @GetMapping public StrategyPage list(@RequestParam(required=false)String keyword,@RequestParam(required=false)String strategyScope,@RequestParam(required=false)String categoryCode,@RequestParam(required=false)String status,@RequestParam(defaultValue="updated")String sort,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size){return service.findAll(new StrategyFilter(keyword,strategyScope,categoryCode,status,sort,Math.max(0,page),Math.min(100,Math.max(1,size))));}
+    @GetMapping public StrategyPage list(@RequestParam(required=false)String keyword,@RequestParam(required=false)String strategyScope,@RequestParam(required=false)String categoryCode,@RequestParam(required=false)String status,@RequestParam(defaultValue="latestActivityAt")String sortField,@RequestParam(defaultValue="desc")String sortDirection,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size){return service.findAll(new StrategyFilter(keyword,strategyScope,categoryCode,status,sortField,sortDirection,Math.max(0,page),Math.min(100,Math.max(1,size))));}
     @GetMapping("/links") public List<StrategyLink> links(){return service.links();}
     @GetMapping("/{id}") public StrategyDetail detail(@PathVariable long id){return service.findById(id);}
     @PostMapping public ResponseEntity<StrategyDetail> create(@RequestBody StrategySaveRequest request){var result=service.create(request);return ResponseEntity.created(URI.create("/api/investment-strategies/"+result.strategyId())).body(result);}
