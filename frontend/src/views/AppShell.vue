@@ -29,7 +29,10 @@ const navigation = [
   },
   {
     label: '시스템',
-    items: [{ label: '서버 연결 확인', icon: 'pi pi-link', to: '/connection' }],
+    items: [
+      { label: '서버 연결 확인', icon: 'pi pi-link', to: '/connection' },
+      { label: 'AI 채팅', icon: 'pi pi-comments', to: '/ai-chat' },
+    ],
   },
 ]
 

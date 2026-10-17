@@ -8,6 +8,7 @@ import {
   strategyScopes,
   strategyTypes,
   type PostPayload,
+  type RelatedTrade,
   type RichContent,
   type StrategyDetail,
   type StrategyHistory,
@@ -34,7 +35,11 @@ const route = useRoute(),
   historyPreview = ref<StrategyHistory>(),
   showJournals = ref(false),
   allJournals = ref<JournalSummary[]>([]),
-  selectedJournals = ref<number[]>([])
+  selectedJournals = ref<number[]>([]),
+  showTrades = ref(false),
+  allTrades = ref<RelatedTrade[]>([]),
+  selectedTrades = ref<number[]>([]),
+  tradeKeyword = ref('')
 const postAttachments = useContentAttachments(postContent)
 const strategyTypeName = (code: string) => strategyTypes.find((x) => x[0] === code)?.[1] || code
 const investmentHorizonName = (code: string) =>
@@ -44,6 +49,20 @@ const scopeName = (scope: StrategyDetail['strategyScope']) =>
 const money = (v: number | string | null) => (v == null ? '—' : Number(v).toLocaleString('ko-KR'))
 const dateTime = (v: string) => new Date(v).toLocaleString('ko-KR')
 const currentJournalIds = computed(() => strategy.value?.journals.map((x) => x.journalId) || [])
+const currentTradeIds = computed(() => strategy.value?.trades.map((x) => x.tradeId) || [])
+const filteredTrades = computed(() => {
+  const keyword = tradeKeyword.value.trim().toLocaleLowerCase('ko-KR')
+  if (!keyword) return allTrades.value
+  return allTrades.value.filter((trade) =>
+    [
+      trade.stockName,
+      trade.stockCode,
+      trade.accountName,
+      trade.brokerageName,
+      trade.tradeMemo || '',
+    ].some((value) => value.toLocaleLowerCase('ko-KR').includes(keyword)),
+  )
+})
 async function load() {
   loading.value = true
   try {
@@ -139,6 +158,27 @@ async function saveJournals() {
     showJournals.value = false
   } catch (e) {
     error.value = e instanceof Error ? e.message : '연결을 저장하지 못했습니다.'
+  } finally {
+    saving.value = false
+  }
+}
+async function openTradePicker() {
+  try {
+    allTrades.value = await investmentStrategyApi.tradeCandidates(id)
+    selectedTrades.value = [...currentTradeIds.value]
+    tradeKeyword.value = ''
+    showTrades.value = true
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '거래 내역을 불러오지 못했습니다.'
+  }
+}
+async function saveTrades() {
+  saving.value = true
+  try {
+    strategy.value = await investmentStrategyApi.replaceTrades(id, selectedTrades.value)
+    showTrades.value = false
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '거래 연결을 저장하지 못했습니다.'
   } finally {
     saving.value = false
   }
@@ -272,9 +312,10 @@ onMounted(load)
       <section v-else-if="tab === 'trades'" class="strategy-card">
         <header>
           <div>
-            <h2>관련 종목의 매매거래</h2>
-            <p>전략에 연결된 종목을 기준으로 조회한 거래입니다.</p>
+            <h2>연결된 매매거래</h2>
+            <p>관련 종목의 거래 내역 중 이 전략과 직접 연결한 거래입니다.</p>
           </div>
+          <button class="primary" @click="openTradePicker">거래 연결 관리</button>
         </header>
         <div class="table-wrap">
           <table>
@@ -310,7 +351,7 @@ onMounted(load)
                 <td>{{ t.tradeMemo || '—' }}</td>
               </tr>
               <tr v-if="!strategy.trades.length">
-                <td colspan="9" class="empty">관련 거래가 없습니다.</td>
+                <td colspan="9" class="empty">연결된 거래가 없습니다.</td>
               </tr>
             </tbody>
           </table>
@@ -440,7 +481,9 @@ onMounted(load)
             <h2>V{{ historyPreview.versionNo }} · {{ historyPreview.title }}</h2>
             <small>{{ dateTime(historyPreview.archivedAt) }}</small>
           </div>
-          <button @click="historyPreview = undefined"><i class="pi pi-times" /></button>
+          <button @click="historyPreview = undefined">
+            <i class="pi pi-times" />
+          </button>
         </header>
         <div class="modal-body">
           <RichTextEditor :model-value="historyPreview.content" readonly />
@@ -455,7 +498,9 @@ onMounted(load)
       <section class="strategy-modal">
         <header>
           <h2>투자일지 연결</h2>
-          <button @click="showJournals = false"><i class="pi pi-times" /></button>
+          <button @click="showJournals = false">
+            <i class="pi pi-times" />
+          </button>
         </header>
         <div class="modal-body journal-select">
           <label v-for="j in allJournals" :key="j.journalId"
@@ -469,6 +514,42 @@ onMounted(load)
         <footer>
           <button class="secondary" @click="showJournals = false">취소</button
           ><button class="primary" :disabled="saving" @click="saveJournals">연결 저장</button>
+        </footer>
+      </section>
+    </div>
+    <div v-if="showTrades" class="strategy-backdrop" @click.self="showTrades = false">
+      <section class="strategy-modal wide">
+        <header>
+          <div>
+            <h2>거래 연결</h2>
+            <small>관련 종목의 거래 내역에서 이 전략에 연결할 거래를 선택합니다.</small>
+          </div>
+          <button @click="showTrades = false"><i class="pi pi-times" /></button>
+        </header>
+        <div class="modal-body trade-select">
+          <input
+            v-model="tradeKeyword"
+            class="trade-search"
+            placeholder="종목, 계좌, 증권사, 매매 이유 검색"
+          />
+          <label v-for="trade in filteredTrades" :key="trade.tradeId">
+            <input v-model="selectedTrades" type="checkbox" :value="trade.tradeId" />
+            <span>
+              <strong>{{ trade.tradeDate }} · {{ trade.stockName }} ({{ trade.stockCode }})</strong>
+              <small>
+                {{ trade.tradeType === 'BUY' ? '매수' : '매도' }} · {{ trade.brokerageName }} ·
+                {{ trade.accountName }} · {{ money(trade.executionQuantity) }}주 ·
+                {{ money(trade.executionAmount) }}원
+              </small>
+              <small v-if="trade.tradeMemo">{{ trade.tradeMemo }}</small>
+            </span>
+          </label>
+          <div v-if="!allTrades.length" class="empty">관련 종목의 거래 내역이 없습니다.</div>
+          <div v-else-if="!filteredTrades.length" class="empty">검색 결과가 없습니다.</div>
+        </div>
+        <footer>
+          <button class="secondary" @click="showTrades = false">취소</button
+          ><button class="primary" :disabled="saving" @click="saveTrades">연결 저장</button>
         </footer>
       </section>
     </div>

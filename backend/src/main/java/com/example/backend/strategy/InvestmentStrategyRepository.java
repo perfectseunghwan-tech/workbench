@@ -70,6 +70,7 @@ public class InvestmentStrategyRepository {
     }
     public int softDelete(long id){return jdbc.update("UPDATE investment_strategy SET use_yn=FALSE,updated_at=CURRENT_TIMESTAMP WHERE strategy_id=:id AND use_yn=TRUE",Map.of("id",id));}
     public void replaceStocks(long id,List<Long> ids){jdbc.update("DELETE FROM investment_strategy_stock WHERE strategy_id=:id",Map.of("id",id));for(Long stockId:ids)jdbc.update("INSERT INTO investment_strategy_stock(strategy_id,stock_id) VALUES(:id,:stockId)",Map.of("id",id,"stockId",stockId));}
+    public void deleteTradesOutsideStrategyStocks(long id){jdbc.update("DELETE FROM investment_strategy_trade x WHERE x.strategy_id=:id AND NOT EXISTS (SELECT 1 FROM stock_trade t JOIN investment_strategy_stock s ON s.stock_id=t.stock_id WHERE t.trade_id=x.trade_id AND s.strategy_id=x.strategy_id)",Map.of("id",id));}
     public boolean stocksExist(List<Long> ids){if(ids.isEmpty())return true;Long count=jdbc.queryForObject("SELECT COUNT(*) FROM stock_master WHERE use_yn=TRUE AND stock_id IN (:ids)",Map.of("ids",ids),Long.class);return count!=null&&count==new HashSet<>(ids).size();}
     public List<StockItem> findStocks(long id){return jdbc.query("SELECT m.stock_id,m.stock_code,m.stock_name,m.market_code,m.currency_code FROM investment_strategy_stock x JOIN stock_master m ON m.stock_id=x.stock_id WHERE x.strategy_id=:id ORDER BY m.stock_name",Map.of("id",id),(rs,n)->new StockItem(rs.getLong(1),rs.getString(2),rs.getString(3),rs.getString(4),rs.getString(5)));}
     public List<StrategyPost> findPosts(long id){return jdbc.query("SELECT post_id,post_type,title,content,post_date,created_at,updated_at FROM investment_strategy_post WHERE strategy_id=:id ORDER BY post_date DESC,post_id DESC",Map.of("id",id),(rs,n)->new StrategyPost(rs.getLong("post_id"),rs.getString("post_type"),rs.getString("title"),tree(rs,"content"),rs.getObject("post_date",java.time.LocalDate.class),time(rs,"created_at"),time(rs,"updated_at"),findFiles("strategy_post_id",rs.getLong("post_id"))));}
@@ -83,12 +84,22 @@ public class InvestmentStrategyRepository {
     public List<LinkedJournal> findJournals(long id){return jdbc.query("SELECT j.journal_id,j.journal_date,j.journal_title,j.updated_at FROM investment_strategy_journal x JOIN investment_journal j ON j.journal_id=x.journal_id WHERE x.strategy_id=:id ORDER BY j.journal_date DESC,j.journal_id DESC",Map.of("id",id),(rs,n)->new LinkedJournal(rs.getLong(1),rs.getObject(2,java.time.LocalDate.class),rs.getString(3),time(rs,"updated_at")));}
     public boolean journalsExist(List<Long> ids){if(ids.isEmpty())return true;Long count=jdbc.queryForObject("SELECT COUNT(*) FROM investment_journal WHERE journal_id IN (:ids)",Map.of("ids",ids),Long.class);return count!=null&&count==new HashSet<>(ids).size();}
     public void replaceJournals(long id,List<Long> ids){jdbc.update("DELETE FROM investment_strategy_journal WHERE strategy_id=:id",Map.of("id",id));for(Long journalId:ids)jdbc.update("INSERT INTO investment_strategy_journal(strategy_id,journal_id) VALUES(:id,:journalId)",Map.of("id",id,"journalId",journalId));}
-    public List<RelatedTrade> findTrades(long id){return jdbc.query("""
-            SELECT t.trade_id,t.trade_date,t.trade_type,m.stock_id,m.stock_code,m.stock_name,b.brokerage_name,a.account_name,t.execution_quantity,t.execution_price,t.execution_amount,t.realized_profit_loss,t.trade_memo
+    public List<RelatedTrade> findTrades(long id){return tradeQuery("""
+              FROM investment_strategy_trade x JOIN stock_trade t ON t.trade_id=x.trade_id
+              JOIN stock_master m ON m.stock_id=t.stock_id
+              JOIN investment_account a ON a.account_id=t.account_id JOIN brokerage_company b ON b.brokerage_id=a.brokerage_id
+             WHERE x.strategy_id=:id ORDER BY t.trade_date DESC,t.trade_id DESC
+            """,id);}
+    public List<RelatedTrade> findTradeCandidates(long id){return tradeQuery("""
               FROM investment_strategy_stock x JOIN stock_master m ON m.stock_id=x.stock_id JOIN stock_trade t ON t.stock_id=x.stock_id
               JOIN investment_account a ON a.account_id=t.account_id JOIN brokerage_company b ON b.brokerage_id=a.brokerage_id
              WHERE x.strategy_id=:id ORDER BY t.trade_date DESC,t.trade_id DESC
-            """,Map.of("id",id),(rs,n)->new RelatedTrade(rs.getLong(1),rs.getObject(2,java.time.LocalDate.class),rs.getString(3),rs.getLong(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getBigDecimal(9),rs.getBigDecimal(10),rs.getBigDecimal(11),rs.getBigDecimal(12),rs.getString(13)));}
+            """,id);}
+    private List<RelatedTrade> tradeQuery(String from,long id){return jdbc.query("""
+            SELECT t.trade_id,t.trade_date,t.trade_type,m.stock_id,m.stock_code,m.stock_name,b.brokerage_name,a.account_name,t.execution_quantity,t.execution_price,t.execution_amount,t.realized_profit_loss,t.trade_memo
+            """+from,Map.of("id",id),(rs,n)->new RelatedTrade(rs.getLong(1),rs.getObject(2,java.time.LocalDate.class),rs.getString(3),rs.getLong(4),rs.getString(5),rs.getString(6),rs.getString(7),rs.getString(8),rs.getBigDecimal(9),rs.getBigDecimal(10),rs.getBigDecimal(11),rs.getBigDecimal(12),rs.getString(13)));}
+    public boolean tradesBelongToStrategyStocks(long id,List<Long> ids){if(ids.isEmpty())return true;Long count=jdbc.queryForObject("SELECT COUNT(*) FROM stock_trade t JOIN investment_strategy_stock x ON x.stock_id=t.stock_id WHERE x.strategy_id=:id AND t.trade_id IN (:ids)",Map.of("id",id,"ids",ids),Long.class);return count!=null&&count==new HashSet<>(ids).size();}
+    public void replaceTrades(long id,List<Long> ids){jdbc.update("DELETE FROM investment_strategy_trade WHERE strategy_id=:id",Map.of("id",id));for(Long tradeId:ids)jdbc.update("INSERT INTO investment_strategy_trade(strategy_id,trade_id) VALUES(:id,:tradeId)",Map.of("id",id,"tradeId",tradeId));}
     public List<StrategyLink> findLinks(){return jdbc.query("SELECT strategy_id,title,status FROM investment_strategy WHERE use_yn=TRUE ORDER BY CASE status WHEN 'ACTIVE' THEN 0 WHEN 'DRAFT' THEN 1 ELSE 2 END,title",Map.of(),(rs,n)->new StrategyLink(rs.getLong(1),rs.getString(2),rs.getString(3)));}
 
     public List<ContentFile> findFiles(String ownerColumn,long ownerId) {

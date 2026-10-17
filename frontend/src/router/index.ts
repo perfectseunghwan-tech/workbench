@@ -80,6 +80,12 @@ const router = createRouter({
           component: () => import('../views/HomeView.vue'),
           meta: { title: '서버 연결 확인' },
         },
+        {
+          path: 'ai-chat',
+          name: 'ai-chat',
+          component: () => import('../views/AiChatView.vue'),
+          meta: { title: 'AI 채팅' },
+        },
       ],
     },
   ],

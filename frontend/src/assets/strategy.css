@@ -211,7 +211,8 @@ td small {
   gap: 7px;
 }
 .check input,
-.journal-select input {
+.journal-select input,
+.trade-select label input {
   width: 17px;
   height: 17px;
 }
@@ -543,6 +544,36 @@ td small {
 .journal-select time {
   color: var(--app-text-muted);
   font-size: 12px;
+}
+.trade-select {
+  display: grid;
+  gap: 7px;
+}
+.trade-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: 5px;
+  background: #fff;
+}
+.trade-select label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+.trade-select label input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.trade-select label span {
+  display: grid;
+  gap: 2px;
+}
+.trade-select label small {
+  color: var(--app-text-muted);
 }
 @media (max-width: 900px) {
   .strategy-main-fields {

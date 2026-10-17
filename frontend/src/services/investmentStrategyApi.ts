@@ -165,7 +165,9 @@ export const investmentStrategyApi = {
     })
   },
   remove(id: number) {
-    return request<void>(`/api/investment-strategies/${id}`, { method: 'DELETE' })
+    return request<void>(`/api/investment-strategies/${id}`, {
+      method: 'DELETE',
+    })
   },
   createPost(id: number, payload: PostPayload, files: File[]) {
     return request<StrategyPost>(`/api/investment-strategies/${id}/posts`, {
@@ -180,7 +182,9 @@ export const investmentStrategyApi = {
     })
   },
   removePost(id: number, postId: number) {
-    return request<void>(`/api/investment-strategies/${id}/posts/${postId}`, { method: 'DELETE' })
+    return request<void>(`/api/investment-strategies/${id}/posts/${postId}`, {
+      method: 'DELETE',
+    })
   },
   restore(id: number, historyId: number) {
     return request<StrategyDetail>(
@@ -192,6 +196,15 @@ export const investmentStrategyApi = {
     return request<StrategyDetail>(`/api/investment-strategies/${id}/journals`, {
       method: 'PUT',
       body: JSON.stringify(journalIds),
+    })
+  },
+  tradeCandidates(id: number) {
+    return request<RelatedTrade[]>(`/api/investment-strategies/${id}/trade-candidates`)
+  },
+  replaceTrades(id: number, tradeIds: number[]) {
+    return request<StrategyDetail>(`/api/investment-strategies/${id}/trades`, {
+      method: 'PUT',
+      body: JSON.stringify(tradeIds),
     })
   },
 }

@@ -233,3 +233,42 @@
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
+
+/* Shared chat action controls. */
+.chat-new-button,
+.chat-send-button,
+.chat-error button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border-radius: var(--app-radius);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chat-new-button,
+.chat-error button {
+  color: var(--app-primary-700);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-strong);
+}
+.chat-send-button {
+  color: #fff;
+  background: var(--app-primary-600);
+  border: 1px solid var(--app-primary-600);
+}
+.chat-new-button:hover,
+.chat-error button:hover {
+  background: var(--app-primary-50);
+}
+.chat-send-button:hover:not(:disabled) {
+  background: var(--app-primary-700);
+}
+.chat-send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
