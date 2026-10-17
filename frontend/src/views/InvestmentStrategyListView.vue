@@ -1,103 +1,93 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import DataTable from "primevue/datatable";
-import type { DataTableSortEvent } from "primevue/datatable";
-import Column from "primevue/column";
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import DataTable from 'primevue/datatable'
+import type { DataTableSortEvent } from 'primevue/datatable'
+import Column from 'primevue/column'
 import {
   investmentStrategyApi,
   statusLabel,
   strategyCategories,
   type StrategySummary,
-} from "../services/investmentStrategyApi";
+} from '../services/investmentStrategyApi'
 const router = useRouter(),
   rows = ref<StrategySummary[]>([]),
   loading = ref(false),
-  error = ref(""),
-  keyword = ref(""),
-  scope = ref(""),
-  category = ref(""),
-  status = ref(""),
-  sort = ref<StrategySortField>("latestActivityAt"),
+  error = ref(''),
+  keyword = ref(''),
+  scope = ref(''),
+  category = ref(''),
+  status = ref(''),
+  sort = ref<StrategySortField>('latestActivityAt'),
   sortOrder = ref<1 | -1>(-1),
   page = ref(0),
-  total = ref(0);
-const categoryName = (code: string) =>
-  strategyCategories.find((x) => x[0] === code)?.[1] || code;
-type StrategySortField = "latestActivityAt" | "createdAt" | "title" | "status";
-const date = (v: string) => new Date(v).toLocaleDateString("ko-KR");
+  total = ref(0)
+const categoryName = (code: string) => strategyCategories.find((x) => x[0] === code)?.[1] || code
+type StrategySortField = 'latestActivityAt' | 'createdAt' | 'title' | 'status'
+const date = (v: string) => new Date(v).toLocaleDateString('ko-KR')
 async function load() {
-  loading.value = true;
-  error.value = "";
+  loading.value = true
+  error.value = ''
   try {
     const p = new URLSearchParams({
       page: String(page.value),
-      size: "20",
+      size: '20',
       sortField: sort.value,
-      sortDirection: sortOrder.value === 1 ? "asc" : "desc",
-    });
-    if (keyword.value.trim()) p.set("keyword", keyword.value.trim());
-    if (scope.value) p.set("strategyScope", scope.value);
-    if (category.value) p.set("categoryCode", category.value);
-    if (status.value) p.set("status", status.value);
-    const r = await investmentStrategyApi.list(p);
-    rows.value = r.content;
-    total.value = r.totalElements;
+      sortDirection: sortOrder.value === 1 ? 'asc' : 'desc',
+    })
+    if (keyword.value.trim()) p.set('keyword', keyword.value.trim())
+    if (scope.value) p.set('strategyScope', scope.value)
+    if (category.value) p.set('categoryCode', category.value)
+    if (status.value) p.set('status', status.value)
+    const r = await investmentStrategyApi.list(p)
+    rows.value = r.content
+    total.value = r.totalElements
   } catch (e) {
-    error.value =
-      e instanceof Error ? e.message : "목록을 불러오지 못했습니다.";
+    error.value = e instanceof Error ? e.message : '목록을 불러오지 못했습니다.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 function search() {
-  page.value = 0;
-  load();
+  page.value = 0
+  load()
 }
 function reset() {
-  keyword.value = "";
-  scope.value = "";
-  category.value = "";
-  status.value = "";
-  sort.value = "latestActivityAt";
-  sortOrder.value = -1;
-  search();
+  keyword.value = ''
+  scope.value = ''
+  category.value = ''
+  status.value = ''
+  sort.value = 'latestActivityAt'
+  sortOrder.value = -1
+  search()
 }
 function onSortPresetChange() {
-  sortOrder.value = sort.value === "title" ? 1 : -1;
-  search();
+  sortOrder.value = sort.value === 'title' ? 1 : -1
+  search()
 }
 async function onPage(event: { page: number }) {
-  page.value = event.page;
-  await load();
+  page.value = event.page
+  await load()
 }
 async function onSort(event: DataTableSortEvent) {
-  const fields: StrategySortField[] = [
-    "latestActivityAt",
-    "createdAt",
-    "title",
-    "status",
-  ];
-  if (
-    typeof event.sortField !== "string" ||
-    !fields.includes(event.sortField as StrategySortField)
-  )
-    return;
-  sort.value = event.sortField as StrategySortField;
-  sortOrder.value = event.sortOrder === 1 ? 1 : -1;
-  page.value = 0;
-  await load();
+  const fields: StrategySortField[] = ['latestActivityAt', 'createdAt', 'title', 'status']
+  if (typeof event.sortField !== 'string' || !fields.includes(event.sortField as StrategySortField))
+    return
+  sort.value = event.sortField as StrategySortField
+  sortOrder.value = event.sortOrder === 1 ? 1 : -1
+  page.value = 0
+  await load()
 }
 async function remove(row: StrategySummary) {
-  if (!confirm(`'${row.title}' 전략을 삭제하시겠습니까?`)) return;
+  if (!confirm(`'${row.title}' 전략을 삭제하시겠습니까?`)) return
   try {
-    await investmentStrategyApi.remove(row.strategyId);
-    await load();
+    await investmentStrategyApi.remove(row.strategyId)
+    await load()
   } catch (e) {
-    error.value = e instanceof Error ? e.message : "삭제하지 못했습니다.";
+    error.value = e instanceof Error ? e.message : '삭제하지 못했습니다.'
   }
 }
-onMounted(load);
+onMounted(load)
 </script>
 <template>
   <div class="strategy-page">
@@ -158,24 +148,17 @@ onMounted(load);
         table-style="min-width: 980px"
         ><Column field="title" header="전략" sortable
           ><template #body="{ data }"
-            ><button
-              class="title-link"
-              @click.stop="router.push(`/strategies/${data.strategyId}`)"
-            >
+            ><button class="title-link" @click.stop="router.push(`/strategies/${data.strategyId}`)">
               {{ data.title }}</button
             ><small
               >V{{ data.versionNo }} ·
-              {{
-                data.strategyScope === "STOCK" ? "종목 중심" : "전체 전략"
-              }}</small
+              {{ data.strategyScope === 'STOCK' ? '종목 중심' : '전체 전략' }}</small
             ></template
           ></Column
         ><Column header="분류"
           ><template #body="{ data }"
             ><div class="chips">
-              <span v-for="code in data.categoryCodes" :key="code">{{
-                categoryName(code)
-              }}</span>
+              <span v-for="code in data.categoryCodes" :key="code">{{ categoryName(code) }}</span>
             </div></template
           ></Column
         ><Column field="status" header="상태" sortable
@@ -186,14 +169,10 @@ onMounted(load);
           ></Column
         ><Column header="관련 종목"
           ><template #body="{ data }">{{
-            data.stocks
-              .map((s: StrategySummary["stocks"][number]) => s.stockName)
-              .join(", ") || "—"
+            data.stocks.map((s: StrategySummary['stocks'][number]) => s.stockName).join(', ') || '—'
           }}</template></Column
         ><Column field="latestActivityAt" header="최근 활동" sortable
-          ><template #body="{ data }">{{
-            date(data.latestActivityAt)
-          }}</template></Column
+          ><template #body="{ data }">{{ date(data.latestActivityAt) }}</template></Column
         ><Column header="관리"
           ><template #body="{ data }"
             ><div class="actions">
@@ -205,9 +184,7 @@ onMounted(load);
               ><button class="danger" @click.stop="remove(data)">삭제</button>
             </div></template
           ></Column
-        ><template #empty
-          ><div class="empty">등록된 투자전략이 없습니다.</div></template
-        ></DataTable
+        ><template #empty><div class="empty">등록된 투자전략이 없습니다.</div></template></DataTable
       >
     </section>
   </div>

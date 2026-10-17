@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="item">
     <i>
       <slot name="icon"></slot>
@@ -53,13 +53,12 @@ h3 {
     position: absolute;
     border: 1px solid var(--color-border);
     background: var(--color-background);
-    border-radius: 0.2rem;
     width: 50px;
     height: 50px;
   }
 
   .item:before {
-    content: " ";
+    content: ' ';
     border-left: 1px solid var(--color-border);
     position: absolute;
     left: 0;
@@ -68,7 +67,7 @@ h3 {
   }
 
   .item:after {
-    content: " ";
+    content: ' ';
     border-left: 1px solid var(--color-border);
     position: absolute;
     left: 0;

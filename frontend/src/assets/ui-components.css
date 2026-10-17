@@ -1,0 +1,56 @@
+/* Shared component geometry. Colors and layout remain with each feature theme. */
+:where(
+  button,
+  input,
+  select,
+  textarea,
+  .p-button,
+  .p-inputtext,
+  .p-select,
+  .p-textarea,
+  .brand,
+  .brand-mark,
+  .brand-symbol,
+  .brand > :first-child,
+  .app-shell .nav-item,
+  .app-shell .sidebar-footer,
+  .item > i,
+  .summary-grid,
+  .filter-card,
+  .table-card,
+  .panel,
+  .journal-card,
+  .strategy-card,
+  .modal,
+  .trade-modal,
+  .stock-picker-modal,
+  .type-switch,
+  .amount-preview,
+  .sell-fields,
+  .detail-grid,
+  .detail-memo,
+  .account-preview,
+  .preview-card,
+  .strategy-checks,
+  .brokerage-item,
+  .company-icon,
+  .trade-badge,
+  .status,
+  .alert,
+  .toast
+) {
+  border-radius: var(--app-radius);
+}
+
+:where(.p-datatable) thead th {
+  text-align: left;
+}
+
+:where(.p-datatable) thead th .p-datatable-column-header-content {
+  width: 100%;
+  justify-content: flex-start !important;
+}
+
+:where(.trade-page, .settings-page, .journal-page, .strategy-page) table th {
+  text-align: left !important;
+}

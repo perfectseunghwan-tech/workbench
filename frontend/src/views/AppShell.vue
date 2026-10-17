@@ -1,82 +1,79 @@
-<script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+﻿<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 
-const route = useRoute();
-const collapsed = ref(false);
-const mobileOpen = ref(false);
-const isMobile = ref(false);
-let mediaQuery: MediaQueryList | undefined;
+const route = useRoute()
+const collapsed = ref(false)
+const mobileOpen = ref(false)
+const isMobile = ref(false)
+let mediaQuery: MediaQueryList | undefined
 
 const navigation = [
   {
-    label: "투자 관리",
+    label: '투자 관리',
     items: [
-      { label: "거래 내역", icon: "pi pi-chart-line", to: "/" },
-      { label: "투자전략 관리", icon: "pi pi-compass", to: "/strategies" },
-      { label: "투자일지", icon: "pi pi-book", to: "/journals" },
+      { label: '거래 내역', icon: 'pi pi-chart-line', to: '/' },
+      { label: '투자전략 관리', icon: 'pi pi-compass', to: '/strategies' },
+      { label: '투자일지', icon: 'pi pi-book', to: '/journals' },
       {
-        label: "증권사·계좌 관리",
-        icon: "pi pi-wallet",
-        to: "/settings/accounts",
+        label: '증권사·계좌 관리',
+        icon: 'pi pi-wallet',
+        to: '/settings/accounts',
       },
       {
-        label: "주식종목 관리",
-        icon: "pi pi-chart-bar",
-        to: "/settings/stocks",
+        label: '주식종목 관리',
+        icon: 'pi pi-chart-bar',
+        to: '/settings/stocks',
       },
     ],
   },
   {
-    label: "시스템",
-    items: [{ label: "서버 연결 확인", icon: "pi pi-link", to: "/connection" }],
+    label: '시스템',
+    items: [{ label: '서버 연결 확인', icon: 'pi pi-link', to: '/connection' }],
   },
-];
+]
 
-const pageTitle = computed(() => String(route.meta.title ?? "Asset Note"));
+const pageTitle = computed(() => String(route.meta.title ?? 'Asset Note'))
 
 function updateViewport(event?: MediaQueryListEvent) {
-  isMobile.value = event?.matches ?? mediaQuery?.matches ?? false;
-  if (!isMobile.value) mobileOpen.value = false;
+  isMobile.value = event?.matches ?? mediaQuery?.matches ?? false
+  if (!isMobile.value) mobileOpen.value = false
 }
 
 function toggleSidebar() {
-  if (isMobile.value) mobileOpen.value = !mobileOpen.value;
-  else collapsed.value = !collapsed.value;
+  if (isMobile.value) mobileOpen.value = !mobileOpen.value
+  else collapsed.value = !collapsed.value
 }
 
 function closeMobileSidebar() {
-  if (isMobile.value) mobileOpen.value = false;
+  if (isMobile.value) mobileOpen.value = false
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") mobileOpen.value = false;
+  if (event.key === 'Escape') mobileOpen.value = false
 }
 
-watch(() => route.fullPath, closeMobileSidebar);
+watch(() => route.fullPath, closeMobileSidebar)
 watch(mobileOpen, (open) => {
-  document.body.style.overflow = open ? "hidden" : "";
-});
+  document.body.style.overflow = open ? 'hidden' : ''
+})
 
 onMounted(() => {
-  mediaQuery = window.matchMedia("(max-width: 760px)");
-  updateViewport();
-  mediaQuery.addEventListener("change", updateViewport);
-  window.addEventListener("keydown", onKeydown);
-});
+  mediaQuery = window.matchMedia('(max-width: 760px)')
+  updateViewport()
+  mediaQuery.addEventListener('change', updateViewport)
+  window.addEventListener('keydown', onKeydown)
+})
 
 onBeforeUnmount(() => {
-  mediaQuery?.removeEventListener("change", updateViewport);
-  window.removeEventListener("keydown", onKeydown);
-  document.body.style.removeProperty("overflow");
-});
+  mediaQuery?.removeEventListener('change', updateViewport)
+  window.removeEventListener('keydown', onKeydown)
+  document.body.style.removeProperty('overflow')
+})
 </script>
 
 <template>
-  <div
-    class="app-shell"
-    :class="{ 'sidebar-collapsed': collapsed, 'sidebar-open': mobileOpen }"
-  >
+  <div class="app-shell" :class="{ 'sidebar-collapsed': collapsed, 'sidebar-open': mobileOpen }">
     <aside id="app-sidebar" class="sidebar" aria-label="주 메뉴">
       <RouterLink
         class="sidebar-brand"
@@ -89,11 +86,7 @@ onBeforeUnmount(() => {
       </RouterLink>
 
       <nav class="sidebar-nav">
-        <section
-          v-for="group in navigation"
-          :key="group.label"
-          class="nav-group"
-        >
+        <section v-for="group in navigation" :key="group.label" class="nav-group">
           <p>{{ group.label }}</p>
           <RouterLink
             v-for="item in group.items"
@@ -193,7 +186,6 @@ onBeforeUnmount(() => {
   place-items: center;
   color: #fff;
   background: linear-gradient(145deg, #7567ef, #5a68e9);
-  border-radius: 0.2rem;
   box-shadow: 0 6px 16px rgba(102, 98, 235, 0.25);
 }
 .brand-name {
@@ -227,7 +219,6 @@ onBeforeUnmount(() => {
   margin: 3px 0;
   padding: 0 12px;
   color: #68738c;
-  border-radius: 0.2rem;
   font-size: 13px;
   font-weight: 650;
   text-decoration: none;
@@ -258,7 +249,7 @@ onBeforeUnmount(() => {
   height: 24px;
   background: #6c63ed;
   border-radius: 0 0.2rem 0.2rem 0;
-  content: "";
+  content: '';
 }
 .nav-item.router-link-exact-active > i {
   color: #645ee9;
@@ -272,7 +263,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   color: #5e6780;
   background: #efefff;
-  border-radius: 0.2rem;
   white-space: nowrap;
 }
 .footer-icon {
@@ -329,7 +319,6 @@ onBeforeUnmount(() => {
   color: #758198;
   background: transparent;
   border: 0;
-  border-radius: 0.2rem;
 }
 .menu-toggle:hover,
 .topbar-tools button:hover {

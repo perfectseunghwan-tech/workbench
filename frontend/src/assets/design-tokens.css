@@ -1,0 +1,33 @@
+@layer base {
+  :root {
+    color-scheme: light;
+    --app-primary-50: #eff6ff;
+    --app-primary-100: #dbeafe;
+    --app-primary-200: #bfdbfe;
+    --app-primary-500: #3b82f6;
+    --app-primary-600: #2563eb;
+    --app-primary-700: #1d4ed8;
+    --app-primary-800: #1e40af;
+    --app-canvas: #f6f8fc;
+    --app-surface: #ffffff;
+    --app-surface-muted: #f8fafc;
+    --app-border: #e2e8f0;
+    --app-border-strong: #cbd5e1;
+    --app-text: #1e293b;
+    --app-text-muted: #64748b;
+    --app-text-subtle: #94a3b8;
+    --app-danger: #dc2626;
+    --app-danger-soft: #fef2f2;
+    --app-success: #15803d;
+    --app-success-soft: #f0fdf4;
+    --app-warning: #b45309;
+    --app-warning-soft: #fffbeb;
+    --app-radius: 0.2rem;
+    --app-shadow: 0 8px 28px rgb(15 23 42 / 0.06);
+    --p-primary-color: var(--app-primary-600);
+    --p-primary-contrast-color: #ffffff;
+    --p-primary-hover-color: var(--app-primary-700);
+    --p-primary-active-color: var(--app-primary-800);
+    --p-primary-focus-ring-color: rgb(59 130 246 / 0.3);
+  }
+}

@@ -245,6 +245,15 @@ When implementation is requested:
 - Do not remove existing functionality unless required.
 - Implement changes in small, logically related units.
 
+### Shared frontend design rules
+
+- Define reusable design values in `frontend/src/assets/design-tokens.css`.
+- Define shared component appearance in `frontend/src/assets/ui-components.css`.
+- Keep view-scoped styles limited to screen-specific layout and unique states.
+- Do not duplicate shared radius, color, shadow, control, table, dialog, alert,
+  or status styles in individual views. Intentional circles and directional
+  corner treatments are exceptions.
+
 Once implementation begins:
 
 - Continue through implementation and targeted verification.
