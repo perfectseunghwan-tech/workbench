@@ -3,11 +3,13 @@ package com.example.backend.trade;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.example.backend.balance.StockBalanceService;
+
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 class StockTradeServiceTest {
-    private final StockTradeService service = new StockTradeService(mock(StockTradeRepository.class));
+    private final StockTradeService service = new StockTradeService(mock(StockTradeRepository.class), mock(StockBalanceService.class));
 
     @Test
     void executionAmountIsRoundedToTwoDecimalPlaces() {

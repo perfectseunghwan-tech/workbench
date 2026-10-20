@@ -20,6 +20,7 @@ public class StockTradeRepository {
             JOIN investment_account a ON a.account_id = t.account_id
             JOIN brokerage_company b ON b.brokerage_id = a.brokerage_id
             JOIN stock_master s ON s.stock_id = t.stock_id
+            LEFT JOIN stock_balance_trade_application ba ON ba.trade_id = t.trade_id
             """;
 
     private static final String TRADE_SELECT = """
@@ -27,7 +28,7 @@ public class StockTradeRepository {
                    t.stock_id, s.stock_code, s.stock_name, s.market_code, s.currency_code,
                    t.trade_date, t.trade_type, t.execution_quantity, t.execution_price,
                    t.execution_amount, t.purchase_price, t.realized_profit_loss, t.trade_memo,
-                   t.created_at, t.updated_at
+                   t.created_at, t.updated_at, (ba.trade_id IS NOT NULL) AS balance_applied
             """ + TRADE_FROM;
 
     private final NamedParameterJdbcTemplate jdbc;
@@ -228,6 +229,9 @@ public class StockTradeRepository {
             where.append(" AND t.trade_type = :tradeType");
             parameters.put("tradeType", filter.tradeType().trim().toUpperCase());
         }
+        if (filter.balanceApplied() != null) {
+            where.append(filter.balanceApplied() ? " AND ba.trade_id IS NOT NULL" : " AND ba.trade_id IS NULL");
+        }
         return where.toString();
     }
 
@@ -266,7 +270,8 @@ public class StockTradeRepository {
                 rs.getBigDecimal("realized_profit_loss"),
                 rs.getString("trade_memo"),
                 toLocalDateTime(rs, "created_at"),
-                toLocalDateTime(rs, "updated_at"));
+                toLocalDateTime(rs, "updated_at"),
+                rs.getBoolean("balance_applied"));
     }
 
     private java.time.LocalDateTime toLocalDateTime(ResultSet rs, String column) throws SQLException {

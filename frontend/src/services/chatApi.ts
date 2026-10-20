@@ -4,15 +4,18 @@ export interface ChatResponse {
   createdAt: string
 }
 
+export type ChatMode = 'GENERAL' | 'STOCK_ANALYSIS'
+
 export async function sendChatMessage(
   conversationId: string,
   message: string,
+  mode: ChatMode,
   signal?: AbortSignal,
 ): Promise<ChatResponse> {
   const response = await fetch('/api/ai/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ conversationId, message }),
+    body: JSON.stringify({ conversationId, message, mode }),
     signal,
   })
   if (!response.ok) {

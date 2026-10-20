@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import type { DataTableSortEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -535,6 +536,14 @@ onMounted(async () => {
             @page="onTradePage"
             @sort="onTradeSort"
           >
+            <Column header="잔고 반영"
+              ><template #body="{ data }"
+                ><span v-if="data.balanceApplied">반영됨</span
+                ><RouterLink v-else :to="{ path: '/balances', query: { tradeId: data.tradeId } }"
+                  >잔고 반영</RouterLink
+                ></template
+              ></Column
+            >
             <Column field="tradeDate" header="거래일" sortable
               ><template #body="{ data }"
                 ><span class="date-cell">{{ data.tradeDate }}</span></template

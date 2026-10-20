@@ -495,7 +495,7 @@
 }
 
 /* Shared native-control theme used by the current screens. */
-:where(.trade-page, .settings-page) {
+:where(.trade-page, .settings-page, .balance-shell) {
   min-height: calc(100vh - 64px) !important;
   color: var(--app-text) !important;
   background: var(--app-canvas) !important;
@@ -506,25 +506,35 @@
   padding: 0 !important;
 }
 
-:where(.trade-page, .settings-page) :where(.section-label, .page-heading > div > p) {
+:where(.trade-page, .settings-page, .balance-shell)
+  :where(.section-label, .page-heading > div > p) {
   color: var(--app-primary-700) !important;
 }
 
-:where(.trade-page, .settings-page)
-  :where(.hero h1, .page-heading h1, .trade-modal h2, .stock-picker-modal h2, .modal h2) {
+:where(.trade-page, .settings-page, .balance-shell)
+  :where(
+    .hero h1,
+    .page-heading h1,
+    .page-shell > header h1,
+    .trade-modal h2,
+    .stock-picker-modal h2,
+    .modal h2,
+    .balance-modal h2
+  ) {
   color: #0f172a !important;
   font-family: inherit !important;
   font-weight: 800 !important;
 }
 
-:where(.trade-page, .settings-page) :where(.filter-card, .table-card, .panel) {
+:where(.trade-page, .settings-page, .balance-shell) :where(.filter-card, .table-card, .panel) {
   border-color: var(--app-border) !important;
   border-radius: var(--app-radius) !important;
   box-shadow: var(--app-shadow) !important;
 }
 
 .trade-page .page-shell,
-.settings-page .page-shell {
+.settings-page .page-shell,
+.balance-shell .page-shell {
   width: calc(100% - 48px) !important;
   max-width: none;
   padding: 48px 0 80px !important;
@@ -537,7 +547,7 @@
   padding: 48px 0 80px !important;
 }
 
-:where(.trade-page, .settings-page, .journal-page)
+:where(.trade-page, .settings-page, .journal-page, .balance-shell)
   :where(.hero h1, .page-heading h1, .page-shell > header h1, .journal-page-head h1) {
   font-family: inherit !important;
   font-size: clamp(24px, 2.4vw, 32px) !important;
@@ -545,7 +555,7 @@
   letter-spacing: -0.04em;
 }
 
-:where(.trade-page, .settings-page, .journal-page)
+:where(.trade-page, .settings-page, .journal-page, .balance-shell)
   :where(.section-label, .page-heading > div > p, .page-shell > header p, .journal-page-head p) {
   margin: 0 0 9px !important;
   color: var(--app-primary-700) !important;
@@ -554,7 +564,7 @@
   letter-spacing: 0.15em !important;
 }
 
-:where(.trade-page, .settings-page, .journal-page)
+:where(.trade-page, .settings-page, .journal-page, .balance-shell)
   :where(
     .hero > div > p:last-child,
     .page-heading span,
@@ -569,14 +579,23 @@
 .trade-page .hero,
 .settings-page .page-heading,
 .settings-page .page-shell > header,
+.balance-shell .page-shell > header,
 .journal-page .journal-page-head {
   margin-bottom: 28px !important;
 }
 
 .trade-page .hero > div > p:last-child,
+.balance-shell .page-shell > header > div > p:last-child,
 .settings-page .page-heading span,
 .trade-page .table-heading p {
   color: var(--app-text-muted) !important;
+}
+
+.balance-shell .page-shell > header > div > p:last-child {
+  margin-top: 8px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  letter-spacing: normal !important;
 }
 
 /* The brokerage and account panels must begin their search areas on the same line. */
@@ -622,23 +641,24 @@
   border-color: var(--app-border) !important;
 }
 
-:where(.trade-page, .settings-page) :where(input, select, textarea) {
+:where(.trade-page, .settings-page, .balance-shell) :where(input, select, textarea) {
   color: var(--app-text) !important;
   background: var(--app-surface) !important;
   border-color: var(--app-border-strong) !important;
   border-radius: var(--app-radius) !important;
 }
 
-:where(.trade-page, .settings-page) :where(input, select) {
+:where(.trade-page, .settings-page, .balance-shell) :where(input, select) {
   height: 42px !important;
 }
 
-:where(.trade-page, .settings-page) :where(input, select, textarea):focus {
+:where(.trade-page, .settings-page, .balance-shell) :where(input, select, textarea):focus {
   border-color: var(--app-primary-500) !important;
   box-shadow: 0 0 0 3px rgb(59 130 246 / 0.12) !important;
 }
 
 .trade-page :where(.primary-button, .search-button),
+.balance-shell :where(.primary-button, .search-button),
 .settings-page .primary {
   min-height: 42px !important;
   color: #fff !important;
@@ -647,11 +667,13 @@
 }
 
 .trade-page :where(.primary-button, .search-button):hover,
+.balance-shell :where(.primary-button, .search-button):hover,
 .settings-page .primary:hover {
   background: var(--app-primary-700) !important;
 }
 
 .trade-page .secondary-button,
+.balance-shell .secondary-button,
 .settings-page .secondary {
   min-height: 42px !important;
   color: #334155 !important;
@@ -677,37 +699,39 @@
   border-color: var(--app-primary-200) !important;
 }
 
-:where(.trade-page, .settings-page) table th {
+:where(.trade-page, .settings-page, .balance-shell) table th {
   color: var(--app-primary-800) !important;
   background: var(--app-primary-50) !important;
   border-bottom: 1px solid var(--app-primary-100) !important;
 }
 
-:where(.trade-page, .settings-page) table td {
+:where(.trade-page, .settings-page, .balance-shell) table td {
   border-color: #eef2f7 !important;
 }
 
-:where(.trade-page, .settings-page) tbody tr:hover {
+:where(.trade-page, .settings-page, .balance-shell) tbody tr:hover {
   background: #f8fbff !important;
 }
 
-:where(.trade-page, .settings-page) :where(.pagination, .pager) button {
+:where(.trade-page, .settings-page, .balance-shell) :where(.pagination, .pager) button {
   color: #475569 !important;
   background: #f1f5f9 !important;
   border-radius: var(--app-radius) !important;
 }
 
-:where(.trade-page, .settings-page) :where(.modal-backdrop) {
+:where(.trade-page, .settings-page, .balance-shell) :where(.modal-backdrop) {
   background: rgb(15 23 42 / 0.56) !important;
 }
 
-:where(.trade-page, .settings-page) :where(.trade-modal, .modal) {
+:where(.trade-page, .settings-page, .balance-shell) :where(.trade-modal, .modal, .balance-modal) {
   border: 1px solid var(--app-border);
   border-radius: var(--app-radius) !important;
   box-shadow: 0 24px 70px rgb(15 23 42 / 0.22);
 }
 
-:where(.trade-page, .settings-page) :where(.trade-modal, .modal) > header {
+:where(.trade-page, .settings-page, .balance-shell)
+  :where(.trade-modal, .modal, .balance-modal)
+  > header {
   border-color: var(--app-border) !important;
 }
 
@@ -738,6 +762,7 @@
 }
 
 .trade-page .alert.error,
+.balance-shell .alert,
 .settings-page .alert {
   color: #991b1b !important;
   background: var(--app-danger-soft) !important;
@@ -900,13 +925,15 @@
 @media (max-width: 760px) {
   .trade-page .page-shell,
   .settings-page .page-shell,
+  .balance-shell .page-shell,
   .journal-page {
     width: calc(100% - 28px) !important;
     padding: 32px 0 48px !important;
   }
 
   .trade-page .page-shell,
-  .settings-page .page-shell {
+  .settings-page .page-shell,
+  .balance-shell .page-shell {
     padding: 32px 0 48px !important;
   }
 }

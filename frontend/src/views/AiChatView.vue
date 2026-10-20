@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref } from 'vue'
-import { clearChat, sendChatMessage } from '../services/chatApi'
+import { clearChat, sendChatMessage, type ChatMode } from '../services/chatApi'
 
 interface ChatMessage {
   id: string
@@ -9,6 +9,7 @@ interface ChatMessage {
 }
 
 const conversationId = ref(crypto.randomUUID())
+const mode = ref<ChatMode>('GENERAL')
 const messages = ref<ChatMessage[]>([])
 const draft = ref('')
 const pending = ref(false)
@@ -42,10 +43,16 @@ async function submit(message = draft.value) {
   const request = new AbortController()
   activeRequest = request
   const requestConversationId = conversationId.value
+  const requestMode = mode.value
   await scrollToBottom()
 
   try {
-    const answer = await sendChatMessage(requestConversationId, question, request.signal)
+    const answer = await sendChatMessage(
+      requestConversationId,
+      question,
+      requestMode,
+      request.signal,
+    )
     if (request.signal.aborted || requestConversationId !== conversationId.value) return
     messages.value.push({
       id: crypto.randomUUID(),
@@ -89,6 +96,16 @@ async function startNewChat() {
   }
 }
 
+function selectMode(selected: ChatMode) {
+  if (mode.value === selected) return
+  void startNewChat()
+  mode.value = selected
+}
+
+function retryLastMessage() {
+  if (lastFailedMessage.value) void submit(lastFailedMessage.value)
+}
+
 onBeforeUnmount(() => activeRequest?.abort())
 </script>
 
@@ -98,18 +115,43 @@ onBeforeUnmount(() => activeRequest?.abort())
       <header class="chat-header">
         <div>
           <h1>AI 채팅</h1>
-          <p>질문을 입력하면 OpenAI가 답변합니다.</p>
+          <p>
+            {{
+              mode === 'STOCK_ANALYSIS'
+                ? '종목과 분석 기간을 질문해 주세요.'
+                : '질문을 입력하면 OpenAI가 답변합니다.'
+            }}
+          </p>
         </div>
         <button class="chat-new-button" type="button" @click="startNewChat">
           <i class="pi pi-plus" aria-hidden="true"></i> 새 대화
         </button>
       </header>
 
+      <div class="chat-modes" role="group" aria-label="채팅 모드">
+        <button type="button" :aria-pressed="mode === 'GENERAL'" @click="selectMode('GENERAL')">
+          일반 채팅
+        </button>
+        <button
+          type="button"
+          :aria-pressed="mode === 'STOCK_ANALYSIS'"
+          @click="selectMode('STOCK_ANALYSIS')"
+        >
+          주식분석
+        </button>
+      </div>
+
       <div ref="history" class="chat-history" role="log" aria-label="대화 내용" aria-live="polite">
         <div v-if="messages.length === 0" class="chat-empty">
           <i class="pi pi-comments" aria-hidden="true"></i>
-          <h2>무엇이든 물어보세요</h2>
-          <p>입력한 질문과 답변은 이 화면에 표시됩니다.</p>
+          <h2>{{ mode === 'STOCK_ANALYSIS' ? '종목을 분석해 보세요' : '무엇이든 물어보세요' }}</h2>
+          <p>
+            {{
+              mode === 'STOCK_ANALYSIS'
+                ? '종목과 분석 기간을 질문하면 가능한 범위에서 분석합니다.'
+                : '입력한 질문과 답변은 이 화면에 표시됩니다.'
+            }}
+          </p>
         </div>
         <div
           v-for="message in messages"
@@ -130,7 +172,7 @@ onBeforeUnmount(() => activeRequest?.abort())
       <div class="chat-composer">
         <div v-if="error" class="chat-error" role="alert">
           <span>{{ error }}</span>
-          <button v-if="lastFailedMessage" type="button" @click="submit(lastFailedMessage)">
+          <button v-if="lastFailedMessage" type="button" @click="retryLastMessage">
             다시 시도
           </button>
         </div>
@@ -142,7 +184,11 @@ onBeforeUnmount(() => activeRequest?.abort())
             :disabled="pending"
             maxlength="4000"
             rows="3"
-            placeholder="질문을 입력하세요"
+            :placeholder="
+              mode === 'STOCK_ANALYSIS'
+                ? '예: 삼성전자 향후 한 달 전망을 분석해 줘'
+                : '질문을 입력하세요'
+            "
             @keydown="onInputKeydown"
           ></textarea>
           <div class="chat-actions">
@@ -191,6 +237,12 @@ onBeforeUnmount(() => activeRequest?.abort())
   margin: 5px 0 0;
   color: var(--app-text-muted);
   font-size: 13px;
+}
+.chat-modes {
+  display: flex;
+  gap: 8px;
+  padding: 12px 26px;
+  border-bottom: 1px solid var(--app-border);
 }
 .chat-history {
   flex: 1;
@@ -267,18 +319,7 @@ onBeforeUnmount(() => activeRequest?.abort())
   font-weight: 700;
 }
 .chat-composer textarea {
-  display: block;
-  width: 100%;
   resize: vertical;
-  padding: 11px 13px;
-  color: var(--app-text);
-  background: var(--app-surface);
-  border: 1px solid var(--app-border-strong);
-  font: inherit;
-}
-.chat-composer textarea:focus {
-  outline: 2px solid var(--app-primary-200);
-  border-color: var(--app-primary-500);
 }
 .chat-actions {
   display: flex;
@@ -311,6 +352,7 @@ onBeforeUnmount(() => activeRequest?.abort())
     border: 0;
   }
   .chat-header,
+  .chat-modes,
   .chat-composer {
     padding-inline: 16px;
   }

@@ -41,7 +41,8 @@ public final class StockTradeDtos {
             BigDecimal realizedProfitLoss,
             String tradeMemo,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt) {
+            LocalDateTime updatedAt,
+            Boolean balanceApplied) {
     }
 
     public record TradeFilter(
@@ -56,7 +57,8 @@ public final class StockTradeDtos {
             int page,
             int size,
             String sortField,
-            String sortDirection) {
+            String sortDirection,
+            Boolean balanceApplied) {
     }
 
     public record PageResponse<T>(

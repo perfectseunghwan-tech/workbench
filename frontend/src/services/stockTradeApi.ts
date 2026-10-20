@@ -42,6 +42,7 @@ export interface StockTrade {
   tradeMemo: string | null
   createdAt: string
   updatedAt: string
+  balanceApplied: boolean
 }
 
 export interface TradePayload {
@@ -88,6 +89,9 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const stockTradeApi = {
+  getTrade(tradeId: number) {
+    return request<StockTrade>(`/api/stock-trades/${tradeId}`)
+  },
   getTrades(params: URLSearchParams) {
     return request<TradePage>(`/api/stock-trades?${params.toString()}`)
   },

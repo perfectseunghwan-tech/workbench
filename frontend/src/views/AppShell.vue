@@ -13,6 +13,7 @@ const navigation = [
     label: '투자 관리',
     items: [
       { label: '거래 내역', icon: 'pi pi-chart-line', to: '/' },
+      { label: '주식잔고', icon: 'pi pi-wallet', to: '/balances' },
       { label: '투자전략 관리', icon: 'pi pi-compass', to: '/strategies' },
       { label: '투자일지', icon: 'pi pi-book', to: '/journals' },
       {

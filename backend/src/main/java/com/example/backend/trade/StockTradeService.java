@@ -2,6 +2,8 @@ package com.example.backend.trade;
 
 import static com.example.backend.trade.StockTradeDtos.*;
 
+import com.example.backend.balance.StockBalanceService;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StockTradeService {
     private final StockTradeRepository repository;
+    private final StockBalanceService balances;
 
-    public StockTradeService(StockTradeRepository repository) {
+    public StockTradeService(StockTradeRepository repository, StockBalanceService balances) {
         this.repository = repository;
+        this.balances = balances;
     }
 
     @Transactional(readOnly = true)
@@ -43,9 +47,10 @@ public class StockTradeService {
 
     @Transactional
     public TradeResponse update(long tradeId, TradeRequest request) {
-        findById(tradeId);
+        TradeResponse before = findById(tradeId);
         TradeRequest normalized = validateAndNormalize(request);
         BigDecimal amount = calculateExecutionAmount(normalized.executionQuantity(), normalized.executionPrice());
+        balances.reviseApplied(before, normalized);
         if (repository.update(tradeId, normalized, amount) == 0) {
             throw new ApiException(HttpStatus.NOT_FOUND, "거래 내역을 찾을 수 없습니다.");
         }
@@ -54,6 +59,8 @@ public class StockTradeService {
 
     @Transactional
     public void delete(long tradeId) {
+        TradeResponse before = findById(tradeId);
+        balances.reviseApplied(before, null);
         if (repository.delete(tradeId) == 0) {
             throw new ApiException(HttpStatus.NOT_FOUND, "거래 내역을 찾을 수 없습니다.");
         }

@@ -2,6 +2,7 @@ package com.example.backend.master;
 
 import static com.example.backend.master.StockMasterDtos.*;
 
+import com.example.backend.balance.StockBalanceRepository;
 import com.example.backend.trade.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,13 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StockMasterService {
     private final StockMasterRepository repository;
-    public StockMasterService(StockMasterRepository repository) { this.repository = repository; }
+    private final StockBalanceRepository balanceRepository;
+    public StockMasterService(StockMasterRepository repository, StockBalanceRepository balanceRepository) { this.repository = repository; this.balanceRepository = balanceRepository; }
     @Transactional(readOnly = true) public PageResponse<StockResponse> findStocks(String keyword, String marketCode, Boolean useYn, int page, int size, String sortField, String sortDirection) { return repository.findStocks(keyword, marketCode, useYn, page, size, sortField, sortDirection); }
     @Transactional(readOnly = true) public StockResponse findStock(long id) { return repository.findById(id).orElseThrow(() -> notFound()); }
     @Transactional public StockResponse create(StockRequest request) { StockRequest normalized = normalize(request); unique(normalized, null); return saved(repository.insert(normalized)); }
     @Transactional public StockResponse update(long id, StockRequest request) { findStock(id); StockRequest normalized = normalize(request); unique(normalized, id); if (repository.update(id, normalized) == 0) throw notFound(); return saved(id); }
     @Transactional public StockResponse updateUsage(long id, UsageRequest request) { if (request == null || request.useYn() == null) throw bad("사용 여부를 입력해 주세요."); if (repository.updateUsage(id, request.useYn()) == 0) throw notFound(); return saved(id); }
-    @Transactional public void delete(long id) { findStock(id); if (repository.hasTrades(id)) throw new ApiException(HttpStatus.CONFLICT, "거래 내역에서 사용 중인 종목은 삭제할 수 없습니다. 사용 중지로 변경해 주세요."); if (repository.delete(id) == 0) throw notFound(); }
+    @Transactional public void delete(long id) { findStock(id); if (repository.hasTrades(id) || balanceRepository.stockReferenced(id)) throw new ApiException(HttpStatus.CONFLICT, "거래 또는 잔고에서 사용 중인 종목은 삭제할 수 없습니다. 사용 중지로 변경해 주세요."); if (repository.delete(id) == 0) throw notFound(); }
     private StockRequest normalize(StockRequest r) {
         if (r == null) throw bad("종목 정보가 필요합니다.");
         String code = required(r.stockCode(), "종목코드를 입력해 주세요.", 30, "종목코드는 30자 이하로 입력해 주세요.");

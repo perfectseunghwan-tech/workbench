@@ -2,6 +2,7 @@ package com.example.backend.master;
 
 import static com.example.backend.master.InvestmentMasterDtos.*;
 
+import com.example.backend.balance.StockBalanceRepository;
 import com.example.backend.trade.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InvestmentMasterService {
     private final InvestmentMasterRepository repository;
+    private final StockBalanceRepository balanceRepository;
 
-    public InvestmentMasterService(InvestmentMasterRepository repository) {
+    public InvestmentMasterService(InvestmentMasterRepository repository, StockBalanceRepository balanceRepository) {
         this.repository = repository;
+        this.balanceRepository = balanceRepository;
     }
 
     @Transactional(readOnly = true)
@@ -121,6 +124,9 @@ public class InvestmentMasterService {
     @Transactional
     public void deleteAccount(long accountId) {
         findAccount(accountId);
+        if (balanceRepository.accountReferenced(accountId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "주식잔고 또는 스냅샷이 있는 계좌는 삭제할 수 없습니다.");
+        }
         repository.deleteAccountTrades(accountId);
         repository.deleteAccountMemos(accountId);
         if (repository.deleteAccount(accountId) == 0) {
