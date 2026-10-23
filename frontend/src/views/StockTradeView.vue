@@ -383,7 +383,9 @@ onMounted(async () => {
     <main class="page-shell">
       <section class="hero">
         <div class="hero-copy">
-          <p class="section-label">STOCK JOURNAL</p>
+          <p class="section-label source-eyebrow">
+            STOCK JOURNAL <span class="section-label source-eyebrow">StockTradeView.vue</span>
+          </p>
           <h1>매수·매도 기록</h1>
           <p>투자 판단과 거래 결과를 한곳에서 차분하게 기록하세요.</p>
           <button class="primary-button hero-action" type="button" @click="openCreateForm()">

@@ -121,7 +121,9 @@ onMounted(load)
   <div class="strategy-page">
     <header class="strategy-head">
       <div>
-        <p>INVESTMENT STRATEGY</p>
+        <p class="source-eyebrow">
+          INVESTMENT STRATEGY <span class="source-eyebrow">InvestmentStrategyListView.vue</span>
+        </p>
         <h1>투자전략 관리</h1>
         <span>투자 원칙과 분석, 실행 기록을 한곳에서 관리합니다.</span>
       </div>

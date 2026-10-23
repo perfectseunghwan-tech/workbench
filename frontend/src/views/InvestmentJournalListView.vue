@@ -86,7 +86,9 @@ onMounted(load)
   <div class="journal-page">
     <div class="journal-page-head">
       <div>
-        <p>INVESTMENT JOURNAL</p>
+        <p class="analysis-eyebrow">
+          INVESTMENT JOURNAL <span class="analysis-eyebrow">InvestmentJournalListView.vue</span>
+        </p>
         <h1>투자일지</h1>
         <span>투자 판단과 결과를 날짜별로 기록합니다.</span>
       </div>

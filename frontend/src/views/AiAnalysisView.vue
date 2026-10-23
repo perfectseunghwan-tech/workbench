@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import RichTextEditor from '../components/RichTextEditor.vue'
-import { collectImageReferences, emptyJournalContent } from '../utils/journalContent'
+import { collectImageReferences, emptyJournalContent, formatBytes } from '../utils/journalContent'
 import type { JournalContent } from '../services/investmentJournalApi'
 import {
   aiAnalysisApi,
@@ -106,19 +106,45 @@ const form = ref(emptyForm())
 const existing = ref<AnalysisFile[]>([])
 const pending = ref<File[]>([])
 const imageKeys = new Map<File, string>()
+const pendingFileKeys = new WeakMap<File, string>()
+function pendingFileKey(file: File) {
+  let key = pendingFileKeys.get(file)
+  if (!key) {
+    key = crypto.randomUUID()
+    pendingFileKeys.set(file, key)
+  }
+  return key
+}
 const richContent = ref<JournalContent>(emptyJournalContent())
 const tagInput = ref('')
+const tagLimit = 10
+const tagCandidate = computed(() => tagInput.value.replace(/^#/, '').trim().replace(/\s+/g, ' '))
+const canAddTag = computed(
+  () =>
+    !!tagCandidate.value &&
+    form.value.tags.length < tagLimit &&
+    !form.value.tags.includes(tagCandidate.value),
+)
 const editor = ref<{
   getHtml: () => string
   getJson: () => JournalContent
   setHtml: (html: string) => void
 } | null>(null)
 const relationType = ref('STRATEGY')
-const relationId = ref('')
 const relationKeyword = ref('')
 const relationOptions = ref<{ id: number; title: string }[]>([])
+const pendingRelations = ref<Relation[]>([])
+const showRelationPicker = ref(false)
+const relationLoading = ref(false)
+let relationRequest = 0
 const stockKeyword = ref('')
 const stockOptions = ref<{ id: number; title: string }[]>([])
+const stockSelection = ref<Target[]>([])
+const showStockPicker = ref(false)
+const stockLoading = ref(false)
+const selectedStocks = computed(() =>
+  form.value.targets.filter((target) => target.targetTypeCode === 'STOCK'),
+)
 function nowLocal() {
   const d = new Date()
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
@@ -212,7 +238,6 @@ onMounted(() => {
 })
 watch(relationType, () => {
   relationOptions.value = []
-  relationId.value = ''
 })
 function search() {
   page.value = 0
@@ -238,66 +263,161 @@ function reset() {
 }
 function addTarget() {
   form.value.targets.push({
-    targetTypeCode: 'STOCK',
+    targetTypeCode: 'OTHER',
     targetCode: '',
     targetName: '',
     isPrimary: form.value.targets.length === 0,
   })
 }
 async function findStocks() {
+  stockLoading.value = true
   try {
     stockOptions.value = await aiAnalysisApi.stockOptions(stockKeyword.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '종목을 검색하지 못했습니다.'
+  } finally {
+    stockLoading.value = false
   }
 }
-function chooseStock(value: { id: number; title: string }) {
+function stockTarget(value: { id: number; title: string }): Target {
   const match = value.title.match(/^(.*) \(([^()]*)\)$/)
-  form.value.targets.push({
+  return {
     targetTypeCode: 'STOCK',
     targetCode: match?.[2] || '',
     targetName: match?.[1] || value.title,
-    isPrimary: form.value.targets.length === 0,
-  })
-  stockOptions.value = []
+    isPrimary: false,
+  }
+}
+function openStockPicker() {
+  stockSelection.value = selectedStocks.value.map((target) => ({ ...target }))
   stockKeyword.value = ''
+  showStockPicker.value = true
+  findStocks()
+}
+function closeStockPicker() {
+  showStockPicker.value = false
+}
+function isStockSelected(value: { id: number; title: string }) {
+  return stockSelection.value.some((target) => target.targetCode === stockTarget(value).targetCode)
+}
+function chooseStock(value: { id: number; title: string }) {
+  const target = stockTarget(value)
+  if (isStockSelected(value))
+    stockSelection.value = stockSelection.value.filter(
+      (item) => item.targetCode !== target.targetCode,
+    )
+  else stockSelection.value.push(target)
+}
+function confirmStockSelection() {
+  const current = form.value.targets.filter((target) => target.targetTypeCode !== 'STOCK')
+  form.value.targets = [...current, ...stockSelection.value]
+  if (form.value.targets.length && !form.value.targets.some((target) => target.isPrimary))
+    form.value.targets[0]!.isPrimary = true
+  closeStockPicker()
+}
+function removeTarget(index: number) {
+  const wasPrimary = form.value.targets[index]?.isPrimary
+  form.value.targets.splice(index, 1)
+  if (wasPrimary && form.value.targets.length) form.value.targets[0]!.isPrimary = true
 }
 async function findRelations() {
+  const requestId = ++relationRequest
+  const type = relationType.value
+  const keyword = relationKeyword.value
+  relationLoading.value = true
   try {
-    relationOptions.value = await aiAnalysisApi.relatedOptions(
-      relationType.value,
-      relationKeyword.value,
-    )
+    const options = await aiAnalysisApi.relatedOptions(type, keyword)
+    if (requestId === relationRequest)
+      relationOptions.value = options.filter(
+        (option) => type !== 'ANALYSIS' || option.id !== id.value,
+      )
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '관련 데이터를 검색하지 못했습니다.'
+    if (requestId === relationRequest)
+      error.value = e instanceof Error ? e.message : '관련 데이터를 검색하지 못했습니다.'
+  } finally {
+    if (requestId === relationRequest) relationLoading.value = false
   }
+}
+function openRelationPicker() {
+  pendingRelations.value = form.value.relations.map((relation) => ({ ...relation }))
+  relationType.value = 'STRATEGY'
+  relationKeyword.value = ''
+  showRelationPicker.value = true
+  findRelations()
+}
+function closeRelationPicker() {
+  showRelationPicker.value = false
+}
+function isRelationSelected(id: number) {
+  return pendingRelations.value.some(
+    (relation) => relation.relationTypeCode === relationType.value && relation.relatedId === id,
+  )
+}
+function toggleRelation(option: { id: number; title: string }) {
+  if (isRelationSelected(option.id)) {
+    pendingRelations.value = pendingRelations.value.filter(
+      (relation) =>
+        relation.relationTypeCode !== relationType.value || relation.relatedId !== option.id,
+    )
+  } else {
+    pendingRelations.value.push({
+      relationTypeCode: relationType.value,
+      relatedId: option.id,
+      relationNote: '',
+      relatedTitle: option.title,
+    })
+  }
+}
+function confirmRelationSelection() {
+  form.value.relations = [...pendingRelations.value]
+  closeRelationPicker()
+}
+function removeRelation(relation: Relation) {
+  form.value.relations = form.value.relations.filter(
+    (item) =>
+      item.relationTypeCode !== relation.relationTypeCode || item.relatedId !== relation.relatedId,
+  )
 }
 function primary(index: number) {
   form.value.targets.forEach((target, i) => (target.isPrimary = i === index))
 }
 function addTag() {
-  const value = tagInput.value.replace(/^#/, '').trim().replace(/\s+/g, ' ')
-  if (value && !form.value.tags.includes(value)) form.value.tags.push(value)
+  const value = tagCandidate.value
+  if (value && form.value.tags.length < tagLimit && !form.value.tags.includes(value)) {
+    form.value.tags.push(value)
+  }
   tagInput.value = ''
 }
-function addRelation() {
-  const relatedId = Number(relationId.value)
-  if (
-    !Number.isSafeInteger(relatedId) ||
-    relatedId <= 0 ||
-    form.value.relations.some(
-      (x) => x.relationTypeCode === relationType.value && x.relatedId === relatedId,
-    )
-  )
-    return
-  form.value.relations.push({ relationTypeCode: relationType.value, relatedId, relationNote: '' })
-  relationId.value = ''
+function handleTagKeydown(event: KeyboardEvent) {
+  if (event.isComposing) return
+  if (['Enter', ',', ' '].includes(event.key)) {
+    event.preventDefault()
+    addTag()
+  }
 }
 function selectFiles(event: Event) {
   const input = event.target as HTMLInputElement
-  for (const file of Array.from(input.files || []))
-    if (existing.value.length + pending.value.length < 30) pending.value.push(file)
+  for (const file of Array.from(input.files || [])) {
+    if (existing.value.length + pending.value.length >= 30) {
+      error.value = '첨부파일은 30개까지 가능합니다.'
+      break
+    }
+    pending.value.push(file)
+  }
   input.value = ''
+}
+function moveExisting(index: number, delta: number) {
+  const target = index + delta
+  if (target < 0 || target >= existing.value.length) return
+  ;[existing.value[index], existing.value[target]] = [
+    existing.value[target]!,
+    existing.value[index]!,
+  ]
+}
+function movePending(index: number, delta: number) {
+  const target = index + delta
+  if (target < 0 || target >= pending.value.length) return
+  ;[pending.value[index], pending.value[target]] = [pending.value[target]!, pending.value[index]!]
 }
 function addImage(file: File, key: string) {
   if (existing.value.length + pending.value.length >= 30) {
@@ -352,7 +472,7 @@ async function save() {
     retainedFileIds: existing.value.map((x) => x.fileId),
     newFiles: pending.value.map((file, index) => ({
       uploadKey: imageKeys.get(file) || crypto.randomUUID(),
-      fileType: file.type.startsWith('image/') ? 'IMAGE' : 'FILE',
+      fileType: imageKeys.has(file) ? 'IMAGE' : 'FILE',
       originalFileName: file.name,
       sortOrder: existing.value.length + index,
     })),
@@ -401,7 +521,9 @@ const dateTime = (value: string | null | undefined) =>
   <div class="journal-page">
     <div class="journal-page-head">
       <div>
-        <p>AI ANALYSIS</p>
+        <p class="analysis-eyebrow">
+          AI ANALYSIS <span class="analysis-eyebrow">AiAnalysisView.vue</span>
+        </p>
         <h1>
           {{
             listing
@@ -554,30 +676,60 @@ const dateTime = (value: string | null | undefined) =>
         </div>
       </section>
       <section class="journal-card analysis-form">
-        <div class="analysis-section-head">
-          <h2>분석 대상</h2>
-          <button class="secondary" @click="addTarget">대상 추가</button>
+        <h2>분석 대상</h2>
+        <div class="analysis-stock-picker">
+          <div class="analysis-stock-heading">
+            <label>관련 종목</label>
+            <button class="secondary" type="button" @click="openStockPicker">
+              <i class="pi pi-search"></i> 종목 검색
+            </button>
+          </div>
+          <div v-if="selectedStocks.length" class="analysis-stock-list">
+            <div
+              v-for="target in selectedStocks"
+              :key="target.targetCode || target.targetName"
+              class="analysis-stock-item"
+            >
+              <span
+                ><strong :title="target.targetName">{{ target.targetName }}</strong
+                ><small>{{ target.targetCode || '코드 없음' }}</small></span
+              >
+              <label
+                ><input
+                  :checked="target.isPrimary"
+                  type="radio"
+                  name="primary"
+                  @change="primary(form.targets.indexOf(target))"
+                />
+                대표</label
+              >
+              <button
+                type="button"
+                :aria-label="`${target.targetName} 선택 해제`"
+                @click="removeTarget(form.targets.indexOf(target))"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+          <p v-else class="analysis-stock-empty">선택된 종목이 없습니다.</p>
         </div>
-        <div class="analysis-inline">
-          <input
-            v-model="stockKeyword"
-            placeholder="종목명 또는 코드 검색"
-            @keyup.enter="findStocks"
-          /><button class="secondary" @click="findStocks">종목 검색</button>
+        <div class="analysis-section-head analysis-other-heading">
+          <label>그 외 분석 대상</label>
+          <button class="secondary" type="button" @click="addTarget">대상 추가</button>
         </div>
-        <div class="analysis-chips">
-          <button
-            v-for="stock in stockOptions"
-            :key="stock.id"
-            class="secondary"
-            @click="chooseStock(stock)"
-          >
-            {{ stock.title }}
-          </button>
-        </div>
-        <div v-for="(target, index) in form.targets" :key="index" class="analysis-inline">
+        <div
+          v-for="(target, index) in form.targets"
+          v-show="target.targetTypeCode !== 'STOCK'"
+          :key="index"
+          class="analysis-inline"
+        >
           <select v-model="target.targetTypeCode">
-            <option v-for="x in options(targetTypes)" :key="x.value" :value="x.value">
+            <option
+              v-for="x in options(targetTypes).filter((item) => item.value !== 'STOCK')"
+              :key="x.value"
+              :value="x.value"
+            >
               {{ x.label }}
             </option></select
           ><input v-model="target.targetCode" placeholder="코드" maxlength="100" /><input
@@ -592,7 +744,7 @@ const dateTime = (value: string | null | undefined) =>
               @change="primary(index)"
             />
             대표</label
-          ><button class="danger" @click="form.targets.splice(index, 1)">제거</button>
+          ><button class="danger" type="button" @click="removeTarget(index)">제거</button>
         </div>
       </section>
       <section class="journal-card analysis-form">
@@ -623,50 +775,82 @@ const dateTime = (value: string | null | undefined) =>
       </section>
       <section class="journal-card analysis-form">
         <h2>연계 및 관리</h2>
-        <div class="analysis-grid">
-          <label
-            >해시태그<input
-              v-model="tagInput"
-              placeholder="#태그 입력 후 Enter"
-              @keyup.enter="addTag" /></label
-          ><button class="secondary" @click="addTag">태그 추가</button>
+        <div class="analysis-tag-section">
+          <div class="analysis-tag-heading">
+            <label for="analysis-tag-input">해시태그 <span>(최대 10개 등록 가능)</span></label>
+            <span>{{ form.tags.length }} / {{ tagLimit }}</span>
+          </div>
+          <div class="analysis-tag-composer">
+            <div class="analysis-tag-field">
+              <span v-for="tag in form.tags" :key="tag" class="analysis-tag-chip">
+                #{{ tag }}
+                <button
+                  type="button"
+                  :aria-label="`${tag} 태그 제거`"
+                  @click="form.tags = form.tags.filter((x) => x !== tag)"
+                >
+                  <i class="pi pi-times"></i>
+                </button>
+              </span>
+              <input
+                id="analysis-tag-input"
+                v-model="tagInput"
+                :disabled="form.tags.length >= tagLimit"
+                :placeholder="form.tags.length ? '' : '#해시태그 입력'"
+                autocomplete="off"
+                @keydown="handleTagKeydown"
+              />
+              <button
+                v-if="tagInput"
+                type="button"
+                class="analysis-tag-clear"
+                aria-label="입력 내용 지우기"
+                @click="tagInput = ''"
+              >
+                <i class="pi pi-times-circle"></i>
+              </button>
+            </div>
+            <div v-if="canAddTag" class="analysis-tag-suggestion">
+              <button type="button" @click="addTag">
+                #{{ tagCandidate }} <span>태그 등록</span>
+              </button>
+            </div>
+          </div>
+          <p class="analysis-tag-help">Enter, 쉼표(,) 또는 Space 키를 누르면 태그가 등록됩니다.</p>
         </div>
-        <div class="analysis-chips">
-          <button
-            v-for="tag in form.tags"
-            :key="tag"
-            class="secondary"
-            @click="form.tags = form.tags.filter((x) => x !== tag)"
-          >
-            #{{ tag }} ×
-          </button>
-        </div>
-        <div class="analysis-inline">
-          <select v-model="relationType">
-            <option v-for="x in options(relationTypes)" :key="x.value" :value="x.value">
-              {{ x.label }}
-            </option></select
-          ><input
-            v-model="relationKeyword"
-            placeholder="제목 검색"
-            @keyup.enter="findRelations"
-          /><button class="secondary" @click="findRelations">검색</button
-          ><select v-model="relationId">
-            <option value="">연결할 항목 선택</option>
-            <option v-for="option in relationOptions" :key="option.id" :value="String(option.id)">
-              {{ option.title }}
-            </option></select
-          ><button class="secondary" @click="addRelation">연결</button>
-        </div>
-        <div class="analysis-chips">
-          <button
-            v-for="(relation, index) in form.relations"
-            :key="`${relation.relationTypeCode}-${relation.relatedId}`"
-            class="secondary"
-            @click="form.relations.splice(index, 1)"
-          >
-            {{ label(relationTypes, relation.relationTypeCode) }} #{{ relation.relatedId }} ×
-          </button>
+        <div class="analysis-relation-picker">
+          <div class="analysis-relation-heading">
+            <div>
+              <h2>관련 투자 데이터</h2>
+              <p>투자전략, 투자일지 등과 연결할 항목을 복수 선택할 수 있습니다.</p>
+            </div>
+            <button class="secondary" type="button" @click="openRelationPicker">
+              <i class="pi pi-search"></i> 관련 데이터 검색
+            </button>
+          </div>
+          <div v-if="form.relations.length" class="analysis-relation-list">
+            <div
+              v-for="relation in form.relations"
+              :key="`${relation.relationTypeCode}-${relation.relatedId}`"
+              class="analysis-relation-item"
+            >
+              <span
+                ><strong>{{
+                  relation.relatedTitle ||
+                  `${label(relationTypes, relation.relationTypeCode)} #${relation.relatedId}`
+                }}</strong
+                ><small>{{ label(relationTypes, relation.relationTypeCode) }}</small></span
+              >
+              <button
+                type="button"
+                :aria-label="`${relation.relatedTitle || relation.relatedId} 연결 해제`"
+                @click="removeRelation(relation)"
+              >
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+          <p v-else class="analysis-relation-empty">연결된 투자 데이터가 없습니다.</p>
         </div>
         <div class="analysis-grid">
           <label
@@ -679,24 +863,81 @@ const dateTime = (value: string | null | undefined) =>
         </div>
       </section>
       <section class="journal-card analysis-form">
-        <h2>첨부파일</h2>
-        <input type="file" multiple @change="selectFiles" />
-        <div class="analysis-chips">
-          <button
-            v-for="file in existing"
-            :key="file.fileId"
-            class="secondary"
-            @click="removeExisting(file)"
-          >
-            {{ file.originalFileName }} ×</button
-          ><button
-            v-for="(file, index) in pending"
-            :key="index"
-            class="secondary"
-            @click="removePending(index)"
-          >
-            {{ file.name }} ×
-          </button>
+        <div class="attachments">
+          <div class="attachments-head">
+            <div>
+              <h2>첨부파일</h2>
+              <p>파일당 25MB, 최대 30개</p>
+            </div>
+            <label class="file-picker"
+              ><i class="pi pi-paperclip"></i> 파일 첨부<input
+                type="file"
+                multiple
+                @change="selectFiles"
+            /></label>
+          </div>
+          <ul class="file-list">
+            <li v-for="(file, index) in existing" :key="`old-${file.fileId}`">
+              <span
+                >{{ file.originalFileName
+                }}<small
+                  >{{ formatBytes(file.fileSize) }} · 기존{{
+                    file.fileType === 'IMAGE' ? ' 본문 이미지' : ''
+                  }}</small
+                ></span
+              >
+              <div>
+                <button
+                  type="button"
+                  class="icon"
+                  aria-label="위로"
+                  :disabled="index === 0"
+                  @click="moveExisting(index, -1)"
+                >
+                  ↑</button
+                ><button
+                  type="button"
+                  class="icon"
+                  aria-label="아래로"
+                  :disabled="index === existing.length - 1"
+                  @click="moveExisting(index, 1)"
+                >
+                  ↓</button
+                ><button type="button" class="danger" @click="removeExisting(file)">제거</button>
+              </div>
+            </li>
+            <li v-for="(file, index) in pending" :key="pendingFileKey(file)">
+              <span
+                >{{ file.name
+                }}<small
+                  >{{ formatBytes(file.size) }} ·
+                  {{ imageKeys.has(file) ? '본문 이미지' : '신규 파일' }}</small
+                ></span
+              >
+              <div>
+                <button
+                  type="button"
+                  class="icon"
+                  aria-label="위로"
+                  :disabled="index === 0"
+                  @click="movePending(index, -1)"
+                >
+                  ↑</button
+                ><button
+                  type="button"
+                  class="icon"
+                  aria-label="아래로"
+                  :disabled="index === pending.length - 1"
+                  @click="movePending(index, 1)"
+                >
+                  ↓</button
+                ><button type="button" class="danger" @click="removePending(index)">제거</button>
+              </div>
+            </li>
+            <li v-if="!existing.length && !pending.length" class="journal-empty">
+              첨부파일이 없습니다.
+            </li>
+          </ul>
         </div>
       </section>
       <div class="form-actions">
@@ -774,6 +1015,112 @@ const dateTime = (value: string | null | undefined) =>
         </p>
       </section>
     </template>
+    <div v-if="showStockPicker" class="analysis-stock-backdrop" @click.self="closeStockPicker">
+      <section
+        class="analysis-stock-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="analysis-stock-title"
+      >
+        <header>
+          <h2 id="analysis-stock-title">분석 대상 종목 선택</h2>
+          <button type="button" aria-label="종목 검색 닫기" @click="closeStockPicker">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+        <div class="analysis-stock-modal-body">
+          <div class="analysis-stock-search">
+            <i class="pi pi-search"></i
+            ><input
+              v-model="stockKeyword"
+              placeholder="종목코드 또는 종목명 검색"
+              autofocus
+              @keyup.enter="findStocks"
+            /><button class="secondary" type="button" @click="findStocks">검색</button>
+          </div>
+          <div v-if="stockOptions.length" class="analysis-stock-options">
+            <label v-for="stock in stockOptions" :key="stock.id"
+              ><input
+                type="checkbox"
+                :checked="isStockSelected(stock)"
+                @change="chooseStock(stock)"
+              /><span
+                ><strong>{{ stockTarget(stock).targetName }}</strong
+                ><small>{{ stockTarget(stock).targetCode || '코드 없음' }}</small></span
+              ></label
+            >
+          </div>
+          <p v-else class="analysis-stock-empty">
+            {{ stockLoading ? '종목을 검색하는 중입니다.' : '검색 결과가 없습니다.' }}
+          </p>
+        </div>
+        <footer>
+          <span>{{ stockSelection.length }}개 선택</span
+          ><button class="secondary" type="button" @click="closeStockPicker">취소</button
+          ><button class="primary" type="button" @click="confirmStockSelection">선택 완료</button>
+        </footer>
+      </section>
+    </div>
+    <div
+      v-if="showRelationPicker"
+      class="analysis-relation-backdrop"
+      @click.self="closeRelationPicker"
+    >
+      <section
+        class="analysis-relation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="analysis-relation-title"
+      >
+        <header>
+          <h2 id="analysis-relation-title">관련 투자 데이터 선택</h2>
+          <button type="button" aria-label="관련 데이터 검색 닫기" @click="closeRelationPicker">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+        <div class="analysis-relation-modal-body">
+          <div class="analysis-relation-search">
+            <select v-model="relationType" aria-label="관련 데이터 유형" @change="findRelations">
+              <option v-for="item in options(relationTypes)" :key="item.value" :value="item.value">
+                {{ item.label }}
+              </option>
+            </select>
+            <div>
+              <i class="pi pi-search"></i
+              ><input
+                v-model="relationKeyword"
+                placeholder="제목 또는 이름 검색"
+                autofocus
+                @keyup.enter="findRelations"
+              />
+            </div>
+            <button class="secondary" type="button" @click="findRelations">검색</button>
+          </div>
+          <div v-if="relationOptions.length" class="analysis-relation-options">
+            <label v-for="option in relationOptions" :key="`${relationType}-${option.id}`"
+              ><input
+                type="checkbox"
+                :checked="isRelationSelected(option.id)"
+                @change="toggleRelation(option)"
+              /><span
+                ><strong>{{ option.title }}</strong
+                ><small>{{ label(relationTypes, relationType) }} · #{{ option.id }}</small></span
+              ></label
+            >
+          </div>
+          <p v-else class="analysis-relation-empty">
+            {{ relationLoading ? '관련 데이터를 검색하는 중입니다.' : '검색 결과가 없습니다.' }}
+          </p>
+        </div>
+        <footer>
+          <span>{{ pendingRelations.length }}개 선택</span
+          ><button class="secondary" type="button" @click="closeRelationPicker">취소</button
+          ><button class="primary" type="button" @click="confirmRelationSelection">
+            선택 완료
+          </button>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>
 <style scoped>
@@ -786,6 +1133,12 @@ const dateTime = (value: string | null | undefined) =>
 }
 .analysis-form h2 {
   margin: 0 0 16px;
+}
+.analysis-form .attachments {
+  margin-top: 0;
+}
+.analysis-form .attachments-head h2 {
+  margin-bottom: 0;
 }
 .analysis-grid {
   display: grid;
@@ -806,7 +1159,6 @@ const dateTime = (value: string | null | undefined) =>
 }
 .analysis-inline,
 .analysis-section-head,
-.analysis-chips,
 .analysis-toolbar {
   display: flex;
   align-items: center;
@@ -819,8 +1171,171 @@ const dateTime = (value: string | null | undefined) =>
 .analysis-section-head {
   justify-content: space-between;
 }
-.analysis-chips {
-  flex-wrap: wrap;
+.analysis-stock-picker,
+.analysis-relation-picker {
+  display: grid;
+  gap: 8px;
+}
+.analysis-stock-heading,
+.analysis-stock-item,
+.analysis-stock-modal > header,
+.analysis-stock-modal > footer,
+.analysis-stock-search,
+.analysis-relation-heading,
+.analysis-relation-item,
+.analysis-relation-modal > header,
+.analysis-relation-modal > footer,
+.analysis-relation-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.analysis-stock-heading,
+.analysis-stock-item,
+.analysis-stock-modal > header,
+.analysis-relation-heading,
+.analysis-relation-item,
+.analysis-relation-modal > header {
+  justify-content: space-between;
+}
+.analysis-stock-options,
+.analysis-relation-list,
+.analysis-relation-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 8px;
+}
+.analysis-stock-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 260px);
+  justify-content: start;
+  gap: 8px;
+  overflow-x: auto;
+}
+.analysis-stock-item span,
+.analysis-stock-options span,
+.analysis-relation-item span,
+.analysis-relation-options span {
+  display: grid;
+  min-width: 0;
+}
+.analysis-stock-item label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.analysis-stock-item input,
+.analysis-stock-options input,
+.analysis-relation-options input {
+  width: 17px;
+  height: 17px;
+}
+.analysis-stock-item > button,
+.analysis-relation-item > button {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  flex: 0 0 30px;
+  padding: 0;
+}
+.analysis-other-heading {
+  margin-top: 20px;
+}
+.analysis-stock-backdrop,
+.analysis-relation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.analysis-stock-modal,
+.analysis-relation-modal {
+  display: flex;
+  width: min(900px, 100%);
+  max-height: 90vh;
+  flex-direction: column;
+}
+.analysis-stock-modal > header,
+.analysis-stock-modal > footer,
+.analysis-relation-modal > header,
+.analysis-relation-modal > footer {
+  padding: 16px 20px;
+}
+.analysis-stock-modal > header h2,
+.analysis-relation-modal > header h2,
+.analysis-relation-heading h2 {
+  margin: 0;
+}
+.analysis-stock-modal > footer,
+.analysis-relation-modal > footer {
+  justify-content: flex-end;
+}
+.analysis-stock-modal > footer span,
+.analysis-relation-modal > footer span {
+  margin-right: auto;
+}
+.analysis-stock-modal-body,
+.analysis-relation-modal-body {
+  overflow: auto;
+  padding: 20px;
+}
+.analysis-stock-search,
+.analysis-relation-search {
+  margin-bottom: 12px;
+}
+.analysis-stock-search input {
+  flex: 1;
+  min-width: 0;
+}
+.analysis-stock-options,
+.analysis-relation-options {
+  max-height: min(420px, 50vh);
+  overflow: auto;
+  padding: 10px;
+}
+.analysis-stock-options label,
+.analysis-relation-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  cursor: pointer;
+}
+.analysis-stock-empty,
+.analysis-relation-empty {
+  margin: 0;
+  padding: 18px;
+  text-align: center;
+}
+.analysis-relation-heading > div {
+  min-width: 0;
+}
+.analysis-relation-heading > button {
+  flex: 0 0 auto;
+}
+.analysis-relation-search > div {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.analysis-relation-search i {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  transform: translateY(-50%);
+}
+.analysis-relation-search input {
+  width: 100%;
+  padding-left: 38px;
+}
+.analysis-relation-search select {
+  width: 180px;
+}
+.analysis-relation-heading p {
+  margin: 3px 0 0;
 }
 .analysis-editor {
   min-height: 250px;
@@ -837,6 +1352,14 @@ const dateTime = (value: string | null | undefined) =>
   }
   .analysis-inline {
     flex-wrap: wrap;
+  }
+  .analysis-relation-heading,
+  .analysis-relation-search {
+    flex-wrap: wrap;
+  }
+  .analysis-relation-heading > button,
+  .analysis-relation-search > div {
+    width: 100%;
   }
 }
 </style>

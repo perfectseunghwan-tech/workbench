@@ -141,11 +141,27 @@ public class StockBalanceRepository {
     }
 
     public void snapshot(long accountId) {
-        Long id = jdbc.queryForObject("""
-                INSERT INTO stock_balance_snapshot (account_id, snapshot_at)
-                VALUES (:id, GREATEST(CURRENT_TIMESTAMP, COALESCE((SELECT MAX(snapshot_at) + INTERVAL '1 microsecond' FROM stock_balance_snapshot WHERE account_id = :id), CURRENT_TIMESTAMP)))
-                RETURNING snapshot_id
-                """, Map.of("id", accountId), Long.class);
+        List<Long> existing = jdbc.query("""
+                SELECT snapshot_id
+                  FROM stock_balance_snapshot
+                 WHERE account_id = :id AND snapshot_at::date = CURRENT_DATE
+                 ORDER BY snapshot_at DESC, snapshot_id DESC
+                 LIMIT 1
+                 FOR UPDATE
+                """, Map.of("id", accountId), (rs, row) -> rs.getLong(1));
+        Long id;
+        if (existing.isEmpty()) {
+            id = jdbc.queryForObject("""
+                    INSERT INTO stock_balance_snapshot (account_id, snapshot_at)
+                    VALUES (:id, CURRENT_TIMESTAMP)
+                    RETURNING snapshot_id
+                    """, Map.of("id", accountId), Long.class);
+        } else {
+            id = existing.get(0);
+            jdbc.update("UPDATE stock_balance_snapshot SET snapshot_at = CURRENT_TIMESTAMP WHERE snapshot_id = :id",
+                    Map.of("id", id));
+            jdbc.update("DELETE FROM stock_balance_snapshot_detail WHERE snapshot_id = :id", Map.of("id", id));
+        }
         jdbc.update("""
                 INSERT INTO stock_balance_snapshot_detail (snapshot_id, stock_id, balance_quantity,
                   current_price, purchase_amount, purchase_price, evaluation_amount, evaluation_profit_loss, return_rate)
@@ -156,7 +172,7 @@ public class StockBalanceRepository {
     }
 
     public List<SnapshotHeader> snapshots(long accountId) {
-        return jdbc.query("SELECT snapshot_id, account_id, snapshot_at FROM stock_balance_snapshot WHERE account_id = :id ORDER BY snapshot_at DESC, snapshot_id DESC",
+        return jdbc.query("SELECT DISTINCT ON (snapshot_at::date) snapshot_id, account_id, snapshot_at FROM stock_balance_snapshot WHERE account_id = :id ORDER BY snapshot_at::date DESC, snapshot_at DESC, snapshot_id DESC",
                 Map.of("id", accountId), (rs, row) -> new SnapshotHeader(rs.getLong(1), rs.getLong(2), dateTime(rs, "snapshot_at")));
     }
 

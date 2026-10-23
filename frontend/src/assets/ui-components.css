@@ -1,4 +1,77 @@
 /* Shared component geometry. Colors and layout remain with each feature theme. */
+.journal-page .analysis-stock-heading > label,
+.journal-page .analysis-other-heading > label,
+.journal-page .analysis-stock-modal > footer span,
+.journal-page .analysis-relation-modal > footer span {
+  color: var(--app-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.journal-page .analysis-stock-item,
+.journal-page .analysis-relation-item {
+  padding: 10px 12px;
+  background: var(--app-primary-50);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+.journal-page .analysis-stock-item strong,
+.journal-page .analysis-stock-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.journal-page .analysis-stock-item small,
+.journal-page .analysis-stock-options small,
+.journal-page .analysis-relation-item small,
+.journal-page .analysis-relation-options small,
+.journal-page .analysis-relation-heading p,
+.journal-page .analysis-relation-search i {
+  color: var(--app-text-muted);
+}
+.journal-page .analysis-stock-item > button,
+.journal-page .analysis-stock-modal > header button,
+.journal-page .analysis-relation-item > button,
+.journal-page .analysis-relation-modal > header button {
+  color: var(--app-text-muted);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+}
+.journal-page .analysis-stock-empty,
+.journal-page .analysis-relation-empty {
+  color: var(--app-text-muted);
+  background: var(--app-surface-muted);
+  border: 1px dashed var(--app-border-strong);
+  border-radius: var(--app-radius);
+}
+.journal-page .analysis-stock-backdrop,
+.journal-page .analysis-relation-backdrop {
+  background: rgb(15 23 42 / 0.56);
+}
+.journal-page .analysis-stock-modal,
+.journal-page .analysis-relation-modal {
+  background: var(--app-surface);
+  border-radius: var(--app-radius);
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.22);
+}
+.journal-page .analysis-stock-modal > header,
+.journal-page .analysis-relation-modal > header {
+  border-bottom: 1px solid var(--app-border);
+}
+.journal-page .analysis-stock-modal > footer,
+.journal-page .analysis-relation-modal > footer {
+  border-top: 1px solid var(--app-border);
+}
+.journal-page .analysis-stock-options,
+.journal-page .analysis-relation-options {
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+.journal-page .analysis-stock-options label,
+.journal-page .analysis-relation-options label {
+  background: var(--app-surface);
+  border-radius: var(--app-radius);
+}
 .journal-page .analysis-grid textarea,
 .journal-page .analysis-editor {
   padding: 12px;
@@ -496,4 +569,188 @@
 .chat-composer textarea:focus {
   outline: 2px solid var(--app-primary-200);
   border-color: var(--app-primary-500);
+}
+.analysis-tag-section {
+  margin-bottom: 20px;
+}
+.analysis-tag-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.analysis-tag-heading label span,
+.analysis-tag-heading > span,
+.analysis-tag-help {
+  color: var(--app-text-muted);
+  font-weight: 400;
+}
+.analysis-tag-composer {
+  position: relative;
+}
+.analysis-tag-field {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 7px 10px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--app-radius);
+}
+.analysis-tag-field:focus-within {
+  border-color: var(--app-primary-600);
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 0.12);
+}
+.analysis-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px 5px 12px;
+  color: var(--app-text);
+  background: var(--app-primary-100);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.journal-page .analysis-tag-chip button,
+.journal-page .analysis-tag-clear {
+  width: 20px;
+  min-height: 20px;
+  padding: 0;
+  color: var(--app-text-muted);
+  background: transparent;
+  border: 0;
+  font-weight: 400;
+}
+.journal-page .analysis-tag-field input {
+  flex: 1 1 130px;
+  width: 130px;
+  min-width: 100px;
+  height: 32px;
+  padding: 0 4px;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+.analysis-tag-suggestion {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  padding: 4px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow);
+}
+.journal-page .analysis-tag-suggestion button {
+  width: 100%;
+  justify-content: space-between;
+  padding: 9px 12px;
+  color: var(--app-text);
+  background: var(--app-primary-50);
+  border: 0;
+  text-align: left;
+}
+.analysis-tag-suggestion button span {
+  color: var(--app-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.analysis-tag-help {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.journal-page .analysis-eyebrow {
+  font-size: 14px !important;
+  line-height: 1.2;
+}
+.journal-page .journal-page-head p.analysis-eyebrow {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.journal-page .journal-page-head span.analysis-eyebrow {
+  display: inline !important;
+  margin-top: 0 !important;
+  flex: 0 0 auto;
+  color: var(--app-text-muted) !important;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+.trade-page .hero-copy > p.source-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.trade-page .hero-copy > p > span.source-eyebrow {
+  display: inline;
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.balance-shell .balance-heading p.source-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.balance-shell .balance-heading p > span.source-eyebrow {
+  display: inline;
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.strategy-page .strategy-head p.source-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.strategy-page .strategy-head p > span.source-eyebrow {
+  display: inline;
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.settings-page .page-heading p.source-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+.settings-page .page-heading p > span.source-eyebrow {
+  display: inline;
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+.settings-page .page-shell > header p.source-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+.settings-page .page-shell > header p > span.source-eyebrow {
+  display: inline;
+  margin: 0;
+  color: var(--app-text-muted);
+  font-size: inherit;
+  letter-spacing: inherit;
 }

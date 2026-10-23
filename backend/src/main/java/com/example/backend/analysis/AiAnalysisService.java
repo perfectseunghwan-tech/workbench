@@ -76,6 +76,7 @@ public class AiAnalysisService {
             @Override public void afterCompletion(int status){if(status!=STATUS_COMMITTED) storage.deleteStored(staged);}
         });
         List<Long> keep=new ArrayList<>(r.retainedFileIds()); Map<String,Long> uploaded=new HashMap<>();
+        repository.updateFileOrder(id,r.retainedFileIds());
         for(int i=0;i<files.size();i++) { StoredFile f=storage.store("ai-analyses/"+id,files.get(i),r.newFiles().get(i)); staged.add(f); long fileId=repository.insertFile(id,f); keep.add(fileId); uploaded.put(r.newFiles().get(i).uploadKey(),fileId); }
         repository.deleteFiles(id,keep);
         staged.forEach(storage::promote);

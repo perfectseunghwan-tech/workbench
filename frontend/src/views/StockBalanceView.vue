@@ -273,6 +273,9 @@ function selectStock(stock: Stock) {
   form.value.stockId = stock.stockId
   selectedStock.value = stock
   showStockPicker.value = false
+  stockPickerFilters.value = { keyword: '', marketCode: '' }
+  stocks.value = []
+  stockPickerError.value = ''
   error.value = ''
 }
 async function save() {
@@ -373,7 +376,9 @@ onMounted(async () => {
     <main class="balance-page page-shell">
       <header class="balance-heading">
         <div>
-          <p class="section-label">STOCK BALANCE</p>
+          <p class="section-label source-eyebrow">
+            STOCK BALANCE <span class="section-label source-eyebrow">StockBalanceView.vue</span>
+          </p>
           <h1>주식잔고</h1>
           <p>증권사와 계좌를 선택해 보유 현황을 확인하고 거래를 반영합니다.</p>
         </div>

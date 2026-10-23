@@ -185,7 +185,9 @@ onUnmounted(() => {
     <section class="page-shell">
       <header>
         <div>
-          <p>STOCK MASTER</p>
+          <p class="source-eyebrow">
+            STOCK MASTER <span class="source-eyebrow">StockSettingsView.vue</span>
+          </p>
           <h1>주식종목 관리</h1>
           <span>거래 등록에 사용할 종목 기준정보를 관리합니다.</span>
         </div>

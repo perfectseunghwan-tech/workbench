@@ -469,7 +469,9 @@ onMounted(() => loadBrokerages(false))
     <main class="page-shell">
       <section class="page-heading">
         <div>
-          <p>ACCOUNT DIRECTORY</p>
+          <p class="source-eyebrow">
+            ACCOUNT DIRECTORY <span class="source-eyebrow">AccountSettingsView.vue</span>
+          </p>
           <h1>증권사·계좌 관리</h1>
           <span>거래 기록에 사용할 증권사와 투자 계좌를 관리합니다.</span>
         </div>

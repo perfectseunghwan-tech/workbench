@@ -14,7 +14,7 @@ export type AnalysisFile = {
   fileId: number
   fileType: string
   originalFileName: string
-  fileSize: number
+  fileSize: number | null
   contentUrl: string
 }
 export type AnalysisSummary = {
