@@ -43,8 +43,8 @@ public class StockBalanceRepository {
         return jdbc.query("""
                 SELECT b.balance_id, b.account_id, a.brokerage_id, c.brokerage_name, a.account_name,
                        b.stock_id, s.stock_code, s.stock_name, s.currency_code,
-                       b.balance_quantity, b.available_quantity, b.current_price, b.purchase_price,
-                       b.purchase_amount, b.evaluation_amount, b.evaluation_profit_loss, b.return_rate,
+                       b.balance_quantity, b.current_price,
+                       b.purchase_amount, b.purchase_price, b.evaluation_amount, b.evaluation_profit_loss, b.return_rate,
                        b.balance_updated_at
                   FROM stock_balance b
                   JOIN investment_account a ON a.account_id = b.account_id
@@ -57,23 +57,41 @@ public class StockBalanceRepository {
         return findBalances(null, accountId, stockId).stream().findFirst();
     }
 
+    public Optional<BalanceKey> findBalanceKey(long balanceId) {
+        return jdbc.query("SELECT account_id, stock_id FROM stock_balance WHERE balance_id = :id",
+                Map.of("id", balanceId), (rs, row) -> new BalanceKey(rs.getLong(1), rs.getLong(2)))
+                .stream().findFirst();
+    }
+
+    public int deleteBalance(long balanceId) {
+        return jdbc.update("DELETE FROM stock_balance WHERE balance_id = :id", Map.of("id", balanceId));
+    }
+
+    public void removeApplications(long accountId, long stockId) {
+        jdbc.update("DELETE FROM stock_balance_trade_application WHERE account_id = :accountId AND stock_id = :stockId",
+                Map.of("accountId", accountId, "stockId", stockId));
+    }
+
+    public record BalanceKey(long accountId, long stockId) {}
+
     public void saveManual(BalanceRequest r) {
         jdbc.update("""
-                INSERT INTO stock_balance (account_id, stock_id, balance_quantity, available_quantity,
-                  current_price, purchase_price, purchase_amount, evaluation_amount,
+                INSERT INTO stock_balance (account_id, stock_id, balance_quantity,
+                  current_price, purchase_amount, purchase_price, evaluation_amount,
                   evaluation_profit_loss, return_rate, balance_updated_at)
-                VALUES (:accountId, :stockId, :quantity, :available, :currentPrice, :purchasePrice,
-                  :purchaseAmount, :evaluationAmount, :profitLoss, :returnRate, CURRENT_TIMESTAMP)
+                VALUES (:accountId, :stockId, :quantity, :currentPrice,
+                  :purchaseAmount, :purchasePrice, :evaluationAmount, :profitLoss, :returnRate, CURRENT_TIMESTAMP)
                 ON CONFLICT (account_id, stock_id) DO UPDATE SET
-                  balance_quantity = EXCLUDED.balance_quantity, available_quantity = EXCLUDED.available_quantity,
-                  current_price = EXCLUDED.current_price, purchase_price = EXCLUDED.purchase_price,
-                  purchase_amount = EXCLUDED.purchase_amount, evaluation_amount = EXCLUDED.evaluation_amount,
+                  balance_quantity = EXCLUDED.balance_quantity,
+                  current_price = EXCLUDED.current_price,
+                  purchase_amount = EXCLUDED.purchase_amount, purchase_price = EXCLUDED.purchase_price,
+                  evaluation_amount = EXCLUDED.evaluation_amount,
                   evaluation_profit_loss = EXCLUDED.evaluation_profit_loss, return_rate = EXCLUDED.return_rate,
                   balance_updated_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
                 """, new MapSqlParameterSource().addValue("accountId", r.accountId()).addValue("stockId", r.stockId())
-                .addValue("quantity", r.balanceQuantity()).addValue("available", r.availableQuantity())
-                .addValue("currentPrice", r.currentPrice()).addValue("purchasePrice", r.purchasePrice())
-                .addValue("purchaseAmount", r.purchaseAmount()).addValue("evaluationAmount", r.evaluationAmount())
+                .addValue("quantity", r.balanceQuantity()).addValue("currentPrice", r.currentPrice())
+                .addValue("purchaseAmount", r.purchaseAmount()).addValue("purchasePrice", r.purchasePrice())
+                .addValue("evaluationAmount", r.evaluationAmount())
                 .addValue("profitLoss", r.evaluationProfitLoss()).addValue("returnRate", r.returnRate()));
     }
 
@@ -83,15 +101,14 @@ public class StockBalanceRepository {
         return values.isEmpty() ? BigDecimal.ZERO : values.get(0);
     }
 
-    public void applyDelta(long accountId, long stockId, BigDecimal quantity, BigDecimal price) {
+    public void applyDelta(long accountId, long stockId, BigDecimal quantity) {
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("accountId", accountId)
-                .addValue("stockId", stockId).addValue("quantity", quantity).addValue("price", price);
+                .addValue("stockId", stockId).addValue("quantity", quantity);
         int updated = jdbc.update("""
                 UPDATE stock_balance SET
                   balance_quantity = balance_quantity + :quantity,
-                  available_quantity = CASE WHEN available_quantity > balance_quantity + :quantity THEN NULL ELSE available_quantity END,
-                  purchase_price = COALESCE(:price, purchase_price),
                   purchase_amount = CASE WHEN :quantity = 0 THEN purchase_amount ELSE NULL END,
+                  purchase_price = CASE WHEN :quantity = 0 THEN purchase_price ELSE NULL END,
                   evaluation_amount = CASE WHEN :quantity = 0 THEN evaluation_amount ELSE NULL END,
                   evaluation_profit_loss = CASE WHEN :quantity = 0 THEN evaluation_profit_loss ELSE NULL END,
                   return_rate = CASE WHEN :quantity = 0 THEN return_rate ELSE NULL END,
@@ -99,8 +116,8 @@ public class StockBalanceRepository {
                  WHERE account_id = :accountId AND stock_id = :stockId
                 """, params);
         if (updated == 0) jdbc.update("""
-                INSERT INTO stock_balance (account_id, stock_id, balance_quantity, purchase_price, balance_updated_at)
-                VALUES (:accountId, :stockId, :quantity, :price, CURRENT_TIMESTAMP)
+                INSERT INTO stock_balance (account_id, stock_id, balance_quantity, balance_updated_at)
+                VALUES (:accountId, :stockId, :quantity, CURRENT_TIMESTAMP)
                 """, params);
     }
 
@@ -130,10 +147,10 @@ public class StockBalanceRepository {
                 RETURNING snapshot_id
                 """, Map.of("id", accountId), Long.class);
         jdbc.update("""
-                INSERT INTO stock_balance_snapshot_detail (snapshot_id, stock_id, balance_quantity, available_quantity,
-                  current_price, purchase_price, purchase_amount, evaluation_amount, evaluation_profit_loss, return_rate)
-                SELECT :id, stock_id, balance_quantity, available_quantity, current_price, purchase_price,
-                  purchase_amount, evaluation_amount, evaluation_profit_loss, return_rate
+                INSERT INTO stock_balance_snapshot_detail (snapshot_id, stock_id, balance_quantity,
+                  current_price, purchase_amount, purchase_price, evaluation_amount, evaluation_profit_loss, return_rate)
+                SELECT :id, stock_id, balance_quantity, current_price,
+                  purchase_amount, purchase_price, evaluation_amount, evaluation_profit_loss, return_rate
                   FROM stock_balance WHERE account_id = :accountId
                 """, Map.of("id", id, "accountId", accountId));
     }
@@ -150,8 +167,9 @@ public class StockBalanceRepository {
         List<BalanceResponse> details = jdbc.query("""
                 SELECT d.snapshot_detail_id AS balance_id, h.account_id, a.brokerage_id, c.brokerage_name, a.account_name,
                        d.stock_id, s.stock_code, s.stock_name, s.currency_code,
-                       d.balance_quantity, d.available_quantity, d.current_price, d.purchase_price,
-                       d.purchase_amount, d.evaluation_amount, d.evaluation_profit_loss, d.return_rate,
+                       d.balance_quantity, d.current_price,
+                       d.purchase_amount, d.purchase_price, d.evaluation_amount,
+                       d.evaluation_profit_loss, d.return_rate,
                        h.snapshot_at AS balance_updated_at
                   FROM stock_balance_snapshot_detail d
                   JOIN stock_balance_snapshot h ON h.snapshot_id = d.snapshot_id
@@ -183,9 +201,9 @@ public class StockBalanceRepository {
         return new BalanceResponse(rs.getLong("balance_id"), rs.getLong("account_id"), rs.getLong("brokerage_id"),
                 rs.getString("brokerage_name"), rs.getString("account_name"), rs.getLong("stock_id"),
                 rs.getString("stock_code"), rs.getString("stock_name"), rs.getString("currency_code"),
-                rs.getBigDecimal("balance_quantity"), rs.getBigDecimal("available_quantity"),
-                rs.getBigDecimal("current_price"), rs.getBigDecimal("purchase_price"),
-                rs.getBigDecimal("purchase_amount"), rs.getBigDecimal("evaluation_amount"),
+                rs.getBigDecimal("balance_quantity"), rs.getBigDecimal("current_price"),
+                rs.getBigDecimal("purchase_amount"), rs.getBigDecimal("purchase_price"),
+                rs.getBigDecimal("evaluation_amount"),
                 rs.getBigDecimal("evaluation_profit_loss"), rs.getBigDecimal("return_rate"),
                 dateTime(rs, "balance_updated_at"));
     }

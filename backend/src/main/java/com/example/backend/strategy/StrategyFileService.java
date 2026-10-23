@@ -2,6 +2,7 @@ package com.example.backend.strategy;
 
 import static com.example.backend.strategy.InvestmentStrategyDtos.*;
 
+import com.example.backend.ContentFileOwnerType;
 import com.example.backend.journal.InvestmentJournalDtos.NewFileManifest;
 import com.example.backend.journal.InvestmentJournalDtos.StoredFile;
 import com.example.backend.journal.JournalFileStorageService;
@@ -32,8 +33,8 @@ public class StrategyFileService {
         });
     }
 
-    public JsonNode save(String ownerColumn,long ownerId,JsonNode content,List<Long> retainedRaw,List<NewFileManifest> newRaw,List<MultipartFile> multipart) {
-        List<ContentFile> existing=repository.findFiles(ownerColumn,ownerId);
+    public JsonNode save(ContentFileOwnerType ownerType,long ownerId,JsonNode content,List<Long> retainedRaw,List<NewFileManifest> newRaw,List<MultipartFile> multipart) {
+        List<ContentFile> existing=repository.findFiles(ownerType,ownerId);
         List<Long> retained=retainedRaw==null?List.of():retainedRaw;
         List<NewFileManifest> manifests=newRaw==null?List.of():newRaw;
         List<MultipartFile> files=multipart==null?List.of():multipart;
@@ -54,18 +55,18 @@ public class StrategyFileService {
         });
         try {
             Map<String,Long> uploaded=new HashMap<>();
-            String prefix="strategy_id".equals(ownerColumn)?"strategies/"+ownerId:"strategy-posts/"+ownerId;
+            String prefix=ownerType==ContentFileOwnerType.STRATEGY?"strategies/"+ownerId:"strategy-posts/"+ownerId;
             for(int i=0;i<files.size();i++) {
                 StoredFile stored=storage.store(prefix,files.get(i),manifests.get(i));
                 staged.add(stored);
-                long id=repository.insertFile(ownerColumn,ownerId,stored);
-                created.add(repository.findFile(ownerColumn,ownerId,id).orElseThrow());
+                long id=repository.insertFile(ownerType,ownerId,stored);
+                created.add(repository.findFile(ownerType,ownerId,id).orElseThrow());
                 uploaded.put(manifests.get(i).uploadKey(),id);
             }
             JsonNode normalized=normalize(content,existing,retained,manifests,uploaded);
-            repository.updateFileOrder(ownerColumn,ownerId,retained);
+            repository.updateFileOrder(ownerType,ownerId,retained);
             Set<Long> keep=new HashSet<>(retained); created.forEach(f->keep.add(f.fileId()));
-            repository.deleteFiles(ownerColumn,ownerId,keep);
+            repository.deleteFiles(ownerType,ownerId,keep);
             staged.forEach(storage::promote);
             return normalized;
         } catch(RuntimeException e){created.forEach(f->storage.delete(f.filePath()));storage.deleteStored(staged);throw e;}

@@ -38,7 +38,6 @@ const pendingError = ref('')
 const pendingFilters = ref({ dateFrom: '', dateTo: '', keyword: '' })
 const selectedIds = ref<number[]>([])
 const groups = ref<ApplicationGroup[]>([])
-const prices = ref<Record<string, string>>({})
 const snapshots = ref<SnapshotHeader[]>([])
 const selectedSnapshot = ref<{
   header: SnapshotHeader
@@ -54,10 +53,9 @@ const form = ref({
   accountId: '' as number | '',
   stockId: '' as number | '',
   balanceQuantity: '0',
-  availableQuantity: '',
   currentPrice: '',
-  purchasePrice: '',
   purchaseAmount: '',
+  purchasePrice: '',
   evaluationAmount: '',
   evaluationProfitLoss: '',
   returnRate: '',
@@ -200,11 +198,9 @@ function openForm(balance?: Balance) {
         accountId: balance.accountId,
         stockId: balance.stockId,
         balanceQuantity: String(balance.balanceQuantity),
-        availableQuantity:
-          balance.availableQuantity === null ? '' : String(balance.availableQuantity),
         currentPrice: balance.currentPrice === null ? '' : String(balance.currentPrice),
-        purchasePrice: balance.purchasePrice === null ? '' : String(balance.purchasePrice),
         purchaseAmount: balance.purchaseAmount === null ? '' : String(balance.purchaseAmount),
+        purchasePrice: balance.purchasePrice === null ? '' : String(balance.purchasePrice),
         evaluationAmount: balance.evaluationAmount === null ? '' : String(balance.evaluationAmount),
         evaluationProfitLoss:
           balance.evaluationProfitLoss === null ? '' : String(balance.evaluationProfitLoss),
@@ -214,15 +210,33 @@ function openForm(balance?: Balance) {
         accountId: accountId.value,
         stockId: '',
         balanceQuantity: '0',
-        availableQuantity: '',
         currentPrice: '',
-        purchasePrice: '',
         purchaseAmount: '',
+        purchasePrice: '',
         evaluationAmount: '',
         evaluationProfitLoss: '',
         returnRate: '',
       }
   editing.value = true
+}
+async function deleteBalance(balance: Balance) {
+  if (
+    !window.confirm(
+      `${balance.stockName} (${balance.stockCode}) 잔고를 삭제할까요? 반영된 거래는 미반영 상태로 돌아갑니다.`,
+    )
+  )
+    return
+  clearError()
+  busy.value = true
+  try {
+    await stockBalanceApi.delete(balance.balanceId)
+    await refresh()
+    notice.value = '잔고가 삭제되었습니다.'
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : '잔고를 삭제하지 못했습니다.'
+  } finally {
+    busy.value = false
+  }
 }
 function openApplyDialog() {
   error.value = ''
@@ -235,7 +249,6 @@ function closeApplyDialog() {
   applying.value = false
   selectedIds.value = []
   groups.value = []
-  prices.value = {}
   error.value = ''
 }
 async function loadStockPicker() {
@@ -268,21 +281,20 @@ async function save() {
     error.value = '계좌와 종목을 선택해 주세요.'
     return
   }
-  const blank = (value: string) => (value.trim() === '' ? null : value.trim())
-  const payload: BalancePayload = {
-    accountId: Number(form.value.accountId),
-    stockId: Number(form.value.stockId),
-    balanceQuantity: form.value.balanceQuantity,
-    availableQuantity: blank(form.value.availableQuantity),
-    currentPrice: blank(form.value.currentPrice),
-    purchasePrice: blank(form.value.purchasePrice),
-    purchaseAmount: blank(form.value.purchaseAmount),
-    evaluationAmount: blank(form.value.evaluationAmount),
-    evaluationProfitLoss: blank(form.value.evaluationProfitLoss),
-    returnRate: blank(form.value.returnRate),
-  }
+  const blank = (value: string | number) => String(value).trim() || null
   busy.value = true
   try {
+    const payload: BalancePayload = {
+      accountId: Number(form.value.accountId),
+      stockId: Number(form.value.stockId),
+      balanceQuantity: String(form.value.balanceQuantity).trim(),
+      currentPrice: blank(form.value.currentPrice),
+      purchaseAmount: blank(form.value.purchaseAmount),
+      purchasePrice: blank(form.value.purchasePrice),
+      evaluationAmount: blank(form.value.evaluationAmount),
+      evaluationProfitLoss: blank(form.value.evaluationProfitLoss),
+      returnRate: blank(form.value.returnRate),
+    }
     await stockBalanceApi.save(payload)
     editing.value = false
     await refresh()
@@ -301,7 +313,6 @@ async function preview() {
   }
   try {
     groups.value = await stockBalanceApi.preview(selectedIds.value)
-    prices.value = Object.fromEntries(groups.value.map((g) => [key(g), '']))
   } catch (e) {
     error.value = e instanceof Error ? e.message : '반영 예상치를 조회하지 못했습니다.'
   }
@@ -310,14 +321,7 @@ async function apply() {
   clearError()
   busy.value = true
   try {
-    await stockBalanceApi.apply(
-      selectedIds.value,
-      groups.value.map((g) => ({
-        accountId: g.accountId,
-        stockId: g.stockId,
-        purchasePrice: prices.value[key(g)]?.trim() || null,
-      })),
-    )
+    await stockBalanceApi.apply(selectedIds.value)
     selectedIds.value = []
     groups.value = []
     await refresh()
@@ -479,7 +483,7 @@ onMounted(async () => {
               dataKey="balanceId"
               class="account-style-table"
               scrollable
-              :tableStyle="{ minWidth: '1080px' }"
+              :tableStyle="{ minWidth: '1050px' }"
               :emptyMessage="accountId ? '등록된 잔고가 없습니다.' : '계좌를 선택해 주세요.'"
             >
               <Column field="stockName" header="종목"
@@ -487,25 +491,44 @@ onMounted(async () => {
                   >{{ data.stockName }} ({{ data.stockCode }})</template
                 ></Column
               >
-              <Column header="잔고수량"
+              <Column header="보유수량"
                 ><template #body="{ data }">{{ fmt(data.balanceQuantity, 6) }}</template></Column
               >
-              <Column header="매도가능"
-                ><template #body="{ data }">{{ fmt(data.availableQuantity, 6) }}</template></Column
+              <Column header="매입금액"
+                ><template #body="{ data }">{{ fmt(data.purchaseAmount) }}</template></Column
+              >
+              <Column header="평균매수가"
+                ><template #body="{ data }">{{ fmt(data.purchasePrice, 6) }}</template></Column
               >
               <Column header="현재가"
                 ><template #body="{ data }">{{ fmt(data.currentPrice, 6) }}</template></Column
               >
-              <Column header="평균 매입가"
-                ><template #body="{ data }">{{ fmt(data.purchasePrice, 6) }}</template></Column
-              >
               <Column header="평가금액"
                 ><template #body="{ data }">{{ fmt(data.evaluationAmount) }}</template></Column
               >
-              <Column header="수정"
+              <Column header="관리"
                 ><template #body="{ data }"
-                  ><button class="row-edit" type="button" @click="openForm(data)">
-                    <i class="pi pi-pencil"></i></button></template
+                  ><div class="balance-row-actions">
+                    <button
+                      class="row-edit"
+                      type="button"
+                      title="수정"
+                      aria-label="수정"
+                      :disabled="busy"
+                      @click="openForm(data)"
+                    >
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="row-edit row-delete"
+                      type="button"
+                      title="삭제"
+                      aria-label="삭제"
+                      :disabled="busy"
+                      @click="deleteBalance(data)"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button></div></template
               ></Column>
             </DataTable>
             <section v-if="accountId" class="snapshot-section">
@@ -528,10 +551,13 @@ onMounted(async () => {
                 class="account-style-table"
               >
                 <Column field="stockName" header="종목" />
-                <Column header="잔고수량"
+                <Column header="보유수량"
                   ><template #body="{ data }">{{ fmt(data.balanceQuantity, 6) }}</template></Column
                 >
-                <Column header="평균 매입가"
+                <Column header="매입금액"
+                  ><template #body="{ data }">{{ fmt(data.purchaseAmount) }}</template></Column
+                >
+                <Column header="평균매수가"
                   ><template #body="{ data }">{{ fmt(data.purchasePrice, 6) }}</template></Column
                 >
               </DataTable>
@@ -653,13 +679,6 @@ onMounted(async () => {
                   >현재 {{ fmt(g.currentQuantity, 6) }} → 반영 후
                   {{ fmt(g.expectedQuantity, 6) }}</span
                 >
-                <label
-                  >평균 매입가 (선택)<input
-                    v-model="prices[key(g)]"
-                    type="number"
-                    min="0"
-                    step="0.000001"
-                /></label>
               </div>
               <button class="primary" type="button" :disabled="busy" @click="apply">
                 예상대로 반영
@@ -691,12 +710,9 @@ onMounted(async () => {
             <div class="balance-form-grid">
               <label
                 ><span class="required-label"><b>*</b> 계좌</span>
-                <select v-model="form.accountId" required>
-                  <option value="" disabled>선택</option>
-                  <option v-for="a in accounts" :key="a.accountId" :value="a.accountId">
-                    {{ a.brokerageName }} · {{ a.accountName }}
-                  </option>
-                </select></label
+                <div class="balance-selected-account">
+                  {{ selectedBrokerage?.brokerageName }} · {{ selectedAccount?.accountName }}
+                </div></label
               ><label
                 ><span class="required-label"><b>*</b> 종목</span>
                 <div class="balance-stock-picker-field">
@@ -717,11 +733,10 @@ onMounted(async () => {
                   </button></div></label
               ><label
                 v-for="field in [
-                  ['balanceQuantity', '잔고수량'],
-                  ['availableQuantity', '매도가능수량'],
-                  ['currentPrice', '현재가'],
-                  ['purchasePrice', '평균 매입가'],
+                  ['balanceQuantity', '보유수량'],
                   ['purchaseAmount', '매입금액'],
+                  ['purchasePrice', '평균매수가'],
+                  ['currentPrice', '현재가'],
                   ['evaluationAmount', '평가금액'],
                   ['evaluationProfitLoss', '평가손익'],
                   ['returnRate', '수익률'],
@@ -983,7 +998,11 @@ onMounted(async () => {
   margin: 4px 8px;
 }
 .balance-panel .account-style-table .p-datatable-table {
-  min-width: 1080px;
+  min-width: 1050px;
+}
+.balance-row-actions {
+  display: flex;
+  gap: 5px;
 }
 .row-edit {
   display: grid;
@@ -997,6 +1016,10 @@ onMounted(async () => {
 .row-edit:hover {
   color: var(--app-primary-700);
   background: var(--app-primary-50);
+}
+.row-delete:hover {
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
 }
 .snapshot-section {
   margin: 18px 14px;
@@ -1053,7 +1076,7 @@ onMounted(async () => {
 }
 .balance-preview-row {
   display: grid;
-  grid-template-columns: minmax(90px, 0.7fr) minmax(130px, 1fr) minmax(140px, 0.8fr);
+  grid-template-columns: minmax(90px, 0.7fr) minmax(130px, 1fr);
   align-items: center;
   gap: 12px;
   padding: 10px 0;

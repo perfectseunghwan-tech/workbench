@@ -11,10 +11,9 @@ export interface Balance {
   stockName: string
   currencyCode: string
   balanceQuantity: DecimalValue
-  availableQuantity: DecimalValue | null
   currentPrice: DecimalValue | null
-  purchasePrice: DecimalValue | null
   purchaseAmount: DecimalValue | null
+  purchasePrice: DecimalValue | null
   evaluationAmount: DecimalValue | null
   evaluationProfitLoss: DecimalValue | null
   returnRate: DecimalValue | null
@@ -23,10 +22,9 @@ export interface Balance {
 
 export type BalancePayload = Pick<Balance, 'accountId' | 'stockId'> & {
   balanceQuantity: string
-  availableQuantity: string | null
   currentPrice: string | null
-  purchasePrice: string | null
   purchaseAmount: string | null
+  purchasePrice: string | null
   evaluationAmount: string | null
   evaluationProfitLoss: string | null
   returnRate: string | null
@@ -64,6 +62,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       typeof body.message === 'string' ? body.message : `요청에 실패했습니다. (${response.status})`,
     )
   }
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
 
@@ -76,6 +75,9 @@ export const stockBalanceApi = {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
+  },
+  delete(balanceId: number) {
+    return request<void>(`/stock-balances/${balanceId}`, { method: 'DELETE' })
   },
   snapshots(accountId: number) {
     return request<SnapshotHeader[]>(`/stock-balances/snapshots?accountId=${accountId}`)
@@ -91,17 +93,10 @@ export const stockBalanceApi = {
       body: JSON.stringify({ tradeIds }),
     })
   },
-  apply(
-    tradeIds: number[],
-    purchasePrices: {
-      accountId: number
-      stockId: number
-      purchasePrice: string | null
-    }[],
-  ) {
+  apply(tradeIds: number[]) {
     return request<ApplicationGroup[]>('/stock-balance-applications', {
       method: 'POST',
-      body: JSON.stringify({ tradeIds, purchasePrices }),
+      body: JSON.stringify({ tradeIds }),
     })
   },
 }

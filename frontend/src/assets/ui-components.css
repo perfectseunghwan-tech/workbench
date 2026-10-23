@@ -171,7 +171,8 @@
   display: flex;
   gap: 7px;
 }
-.balance-shell .balance-selected-stock {
+.balance-shell .balance-selected-stock,
+.balance-shell .balance-selected-account {
   display: flex;
   min-height: 42px;
   flex: 1;

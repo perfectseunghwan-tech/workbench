@@ -3,6 +3,8 @@ package com.example.backend.balance;
 import static com.example.backend.balance.StockBalanceDtos.*;
 
 import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +29,12 @@ public class StockBalanceController {
 
     @PutMapping("/stock-balances")
     public BalanceResponse save(@RequestBody BalanceRequest request) { return service.save(request); }
+
+    @DeleteMapping("/stock-balances/{balanceId}")
+    public ResponseEntity<Void> delete(@PathVariable long balanceId) {
+        service.delete(balanceId);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/stock-balances/snapshots")
     public List<SnapshotHeader> snapshots(@RequestParam long accountId) { return service.snapshots(accountId); }

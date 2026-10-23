@@ -69,7 +69,7 @@ public class JournalFileStorageService {
         return path;
     }
     public void delete(String relative) { try { Files.deleteIfExists(resolve(relative)); } catch (IOException e) { log.warn("investment journal file cleanup failed: relativePath={}", relative); } }
-    public void deleteAll(Collection<FileRow> rows) { rows.forEach(f -> { try { Files.deleteIfExists(resolve(f.filePath())); } catch (IOException e) { log.warn("investment journal file cleanup failed: journalId={}, fileId={}, relativePath={}", f.journalId(), f.fileId(), f.filePath()); } }); }
+    public void deleteAll(Collection<FileRow> rows) { rows.forEach(f -> { try { Files.deleteIfExists(resolve(f.filePath())); } catch (IOException e) { log.warn("investment journal file cleanup failed: ownerId={}, fileId={}, relativePath={}", f.ownerId(), f.fileId(), f.filePath()); } }); }
 
     private void validate(MultipartFile file, NewFileManifest m) {
         if (file==null || file.isEmpty() || file.getOriginalFilename()==null) throw new ApiException(HttpStatus.BAD_REQUEST,"빈 첨부파일은 저장할 수 없습니다.");

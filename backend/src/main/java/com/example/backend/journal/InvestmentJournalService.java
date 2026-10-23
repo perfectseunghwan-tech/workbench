@@ -42,7 +42,7 @@ public class InvestmentJournalService {
         return repository.findAll(filter);
     }
     @Transactional(readOnly=true) public JournalDetailResponse findById(long id) { return detail(row(id)); }
-    @Transactional(readOnly=true) public FileRow findFile(long journalId,long fileId) { return repository.findFile(journalId,fileId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"첨부파일을 찾을 수 없습니다.")); }
+    @Transactional(readOnly=true) public FileRow findFile(long journalId,long fileId) { row(journalId); return repository.findFile(journalId,fileId).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"첨부파일을 찾을 수 없습니다.")); }
 
     @Transactional
     public JournalDetailResponse create(JournalSaveRequest raw,List<MultipartFile> files) {
@@ -88,6 +88,7 @@ public class InvestmentJournalService {
     @Transactional
     public void delete(long id) {
         row(id); List<FileRow> files=repository.findFiles(id);
+        repository.deleteFiles(id, List.of());
         if(repository.delete(id)==0) throw notFound();
         afterCommit(()->storage.deleteAll(files));
     }

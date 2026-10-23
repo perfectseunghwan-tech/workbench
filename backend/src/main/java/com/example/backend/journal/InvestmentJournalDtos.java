@@ -39,7 +39,7 @@ public final class InvestmentJournalDtos {
 
     record JournalRow(Long journalId, LocalDate journalDate, String journalTitle, String contentFormat,
             JsonNode journalContent, LocalDateTime createdAt, LocalDateTime updatedAt) {}
-    record FileRow(Long fileId, Long journalId, String fileType, String originalFileName,
+    record FileRow(Long fileId, Long ownerId, String fileType, String originalFileName,
             String storedFileName, String filePath, String mimeType, Long fileSize,
             int sortOrder, LocalDateTime createdAt) {}
     public record StoredFile(String originalFileName, String storedFileName, String filePath, String stagingPath,

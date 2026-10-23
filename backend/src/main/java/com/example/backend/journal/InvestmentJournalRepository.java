@@ -2,6 +2,7 @@ package com.example.backend.journal;
 
 import static com.example.backend.journal.InvestmentJournalDtos.*;
 
+import com.example.backend.ContentFileOwnerType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,11 +32,12 @@ public class InvestmentJournalRepository {
             where.append(" AND LOWER(COALESCE(j.journal_title, '')) LIKE :keyword");
             params.put("keyword", "%" + filter.keyword().trim().toLowerCase(Locale.ROOT) + "%");
         }
+        params.put("ownerType", ContentFileOwnerType.JOURNAL.name());
         params.put("limit", filter.size()); params.put("offset", filter.page() * filter.size());
         String from = " FROM investment_journal j";
         List<JournalSummaryResponse> content = jdbc.query("""
                 SELECT j.journal_id, j.journal_date, j.journal_title, j.created_at, j.updated_at,
-                       (SELECT COUNT(*) FROM investment_content_file f WHERE f.journal_id=j.journal_id) file_count
+                       (SELECT COUNT(*) FROM investment_content_file f WHERE f.owner_type=:ownerType AND f.owner_id=j.journal_id) file_count
                 """ + from + where + " ORDER BY " + orderBy(filter.sortField(), filter.sortDirection())
                         + " LIMIT :limit OFFSET :offset",
                 params, (rs, n) -> new JournalSummaryResponse(rs.getLong("journal_id"),
@@ -64,13 +66,13 @@ public class InvestmentJournalRepository {
     }
 
     public List<FileRow> findFiles(long journalId) {
-        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE journal_id=:id ORDER BY sort_order,file_id",
-                Map.of("id", journalId), (rs, n) -> file(rs));
+        return jdbc.query("SELECT file_id,owner_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE owner_type=:ownerType AND owner_id=:id ORDER BY sort_order,file_id",
+                Map.of("ownerType", ContentFileOwnerType.JOURNAL.name(), "id", journalId), (rs, n) -> file(rs));
     }
 
     public Optional<FileRow> findFile(long journalId, long fileId) {
-        return jdbc.query("SELECT file_id,journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE journal_id=:journalId AND file_id=:fileId",
-                Map.of("journalId", journalId, "fileId", fileId), (rs, n) -> file(rs)).stream().findFirst();
+        return jdbc.query("SELECT file_id,owner_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order,created_at FROM investment_content_file WHERE owner_type=:ownerType AND owner_id=:journalId AND file_id=:fileId",
+                Map.of("ownerType", ContentFileOwnerType.JOURNAL.name(), "journalId", journalId, "fileId", fileId), (rs, n) -> file(rs)).stream().findFirst();
     }
 
     public long insert(JournalSaveRequest request, JsonNode content) {
@@ -92,9 +94,9 @@ public class InvestmentJournalRepository {
 
     public long insertFile(long journalId, StoredFile f) {
         Long id = jdbc.queryForObject("""
-                INSERT INTO investment_content_file(journal_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order)
-                VALUES(:journalId,:fileType,:original,:stored,:path,:mime,:size,:sortOrder) RETURNING file_id
-                """, new MapSqlParameterSource().addValue("journalId", journalId).addValue("fileType", f.fileType())
+                INSERT INTO investment_content_file(owner_type,owner_id,file_type,original_file_name,stored_file_name,file_path,mime_type,file_size,sort_order)
+                VALUES(:ownerType,:journalId,:fileType,:original,:stored,:path,:mime,:size,:sortOrder) RETURNING file_id
+                """, new MapSqlParameterSource().addValue("ownerType", ContentFileOwnerType.JOURNAL.name()).addValue("journalId", journalId).addValue("fileType", f.fileType())
                 .addValue("original", f.originalFileName()).addValue("stored", f.storedFileName())
                 .addValue("path", f.filePath()).addValue("mime", f.mimeType()).addValue("size", f.fileSize())
                 .addValue("sortOrder", f.sortOrder()), Long.class);
@@ -103,13 +105,13 @@ public class InvestmentJournalRepository {
     }
 
     public void deleteFiles(long journalId, Collection<Long> retained) {
-        if (retained.isEmpty()) jdbc.update("DELETE FROM investment_content_file WHERE journal_id=:id", Map.of("id", journalId));
-        else jdbc.update("DELETE FROM investment_content_file WHERE journal_id=:id AND file_id NOT IN (:ids)", Map.of("id", journalId, "ids", retained));
+        if (retained.isEmpty()) jdbc.update("DELETE FROM investment_content_file WHERE owner_type=:ownerType AND owner_id=:id", Map.of("ownerType", ContentFileOwnerType.JOURNAL.name(), "id", journalId));
+        else jdbc.update("DELETE FROM investment_content_file WHERE owner_type=:ownerType AND owner_id=:id AND file_id NOT IN (:ids)", Map.of("ownerType", ContentFileOwnerType.JOURNAL.name(), "id", journalId, "ids", retained));
     }
     public void updateFileOrder(long journalId, List<Long> ids) {
         for (int i = 0; i < ids.size(); i++) {
-            jdbc.update("UPDATE investment_content_file SET sort_order=:sortOrder WHERE journal_id=:journalId AND file_id=:fileId",
-                    Map.of("sortOrder", i, "journalId", journalId, "fileId", ids.get(i)));
+            jdbc.update("UPDATE investment_content_file SET sort_order=:sortOrder WHERE owner_type=:ownerType AND owner_id=:journalId AND file_id=:fileId",
+                    Map.of("sortOrder", i, "ownerType", ContentFileOwnerType.JOURNAL.name(), "journalId", journalId, "fileId", ids.get(i)));
         }
     }
     public int delete(long id) { return jdbc.update("DELETE FROM investment_journal WHERE journal_id=:id", Map.of("id", id)); }
@@ -141,6 +143,6 @@ public class InvestmentJournalRepository {
         try { return new JournalRow(rs.getLong("journal_id"), rs.getObject("journal_date", java.time.LocalDate.class), rs.getString("journal_title"), rs.getString("content_format"), mapper.readTree(rs.getString("journal_content")), time(rs,"created_at"), time(rs,"updated_at")); }
         catch (JsonProcessingException e) { throw new SQLException("잘못된 일지 JSON", e); }
     }
-    private FileRow file(ResultSet rs) throws SQLException { return new FileRow(rs.getLong("file_id"),rs.getLong("journal_id"),rs.getString("file_type"),rs.getString("original_file_name"),rs.getString("stored_file_name"),rs.getString("file_path"),rs.getString("mime_type"),(Long)rs.getObject("file_size"),rs.getInt("sort_order"),time(rs,"created_at")); }
+    private FileRow file(ResultSet rs) throws SQLException { return new FileRow(rs.getLong("file_id"),rs.getLong("owner_id"),rs.getString("file_type"),rs.getString("original_file_name"),rs.getString("stored_file_name"),rs.getString("file_path"),rs.getString("mime_type"),(Long)rs.getObject("file_size"),rs.getInt("sort_order"),time(rs,"created_at")); }
     private static java.time.LocalDateTime time(ResultSet rs, String c) throws SQLException { var t=rs.getTimestamp(c); return t==null?null:t.toLocalDateTime(); }
 }
