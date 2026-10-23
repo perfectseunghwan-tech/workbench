@@ -21,6 +21,7 @@ const props = withDefaults(
     journalId?: number
     strategyId?: number
     strategyPostId?: number
+    analysisId?: number
   }>(),
   { readonly: false, imagesEnabled: false },
 )
@@ -97,30 +98,54 @@ const imageNode = Node.create({
       fileId: { default: null },
       uploadKey: { default: null },
       previewUrl: { default: null },
+      externalSrc: { default: null },
       alt: { default: '' },
       title: { default: null },
     }
   },
   parseHTML() {
-    return [{ tag: 'img[data-journal-image]' }]
+    return [
+      {
+        tag: 'img',
+        getAttrs: (element) => {
+          const image = element as HTMLImageElement
+          const match = image.getAttribute('src')?.match(/\/files\/(\d+)$/)
+          return {
+            fileId: match ? Number(match[1]) : null,
+            externalSrc: match ? null : image.getAttribute('src'),
+            alt: image.alt,
+            title: image.title,
+          }
+        },
+      },
+    ]
   },
   renderHTML({ HTMLAttributes }) {
     const src =
       HTMLAttributes.previewUrl ||
+      HTMLAttributes.externalSrc ||
       (HTMLAttributes.fileId
-        ? props.journalId
-          ? `/api/investment-journals/${props.journalId}/files/${HTMLAttributes.fileId}`
-          : props.strategyId && props.strategyPostId
-            ? `/api/investment-strategies/${props.strategyId}/posts/${props.strategyPostId}/files/${HTMLAttributes.fileId}`
-            : props.strategyId
-              ? `/api/investment-strategies/${props.strategyId}/files/${HTMLAttributes.fileId}`
-              : ''
+        ? props.analysisId
+          ? `/api/ai-analyses/${props.analysisId}/files/${HTMLAttributes.fileId}`
+          : props.journalId
+            ? `/api/investment-journals/${props.journalId}/files/${HTMLAttributes.fileId}`
+            : props.strategyId && props.strategyPostId
+              ? `/api/investment-strategies/${props.strategyId}/posts/${props.strategyPostId}/files/${HTMLAttributes.fileId}`
+              : props.strategyId
+                ? `/api/investment-strategies/${props.strategyId}/files/${HTMLAttributes.fileId}`
+                : ''
         : '')
+    const { previewUrl, uploadKey, externalSrc, ...safeAttributes } = HTMLAttributes
     return [
       'img',
       mergeAttributes(
-        { 'data-journal-image': '', src, alt: HTMLAttributes.alt || '' },
-        HTMLAttributes,
+        {
+          'data-journal-image': '',
+          src,
+          alt: HTMLAttributes.alt || '',
+          ...(uploadKey ? { 'data-upload-key': uploadKey } : {}),
+        },
+        safeAttributes,
       ),
     ]
   },
@@ -182,6 +207,11 @@ const editor = useEditor({
     cleanupUrls(value)
     emit('update:modelValue', value)
   },
+})
+defineExpose({
+  getHtml: () => editor.value?.getHTML() || '',
+  getJson: () => editor.value?.getJSON() as EditorDocument,
+  setHtml: (html: string) => editor.value?.commands.setContent(html),
 })
 
 watch(

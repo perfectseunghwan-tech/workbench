@@ -1,4 +1,12 @@
 /* Shared component geometry. Colors and layout remain with each feature theme. */
+.journal-page .analysis-grid textarea,
+.journal-page .analysis-editor {
+  padding: 12px;
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--app-radius);
+}
 :where(
   button,
   input,

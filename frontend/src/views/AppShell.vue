@@ -16,6 +16,7 @@ const navigation = [
       { label: '주식잔고', icon: 'pi pi-wallet', to: '/balances' },
       { label: '투자전략 관리', icon: 'pi pi-compass', to: '/strategies' },
       { label: '투자일지', icon: 'pi pi-book', to: '/journals' },
+      { label: 'AI 분석 관리', icon: 'pi pi-sparkles', to: '/ai-analyses' },
       {
         label: '증권사·계좌 관리',
         icon: 'pi pi-wallet',
