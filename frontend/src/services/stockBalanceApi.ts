@@ -36,6 +36,12 @@ export interface SnapshotHeader {
   snapshotAt: string
 }
 
+export interface PriceRefreshResult {
+  updatedCount: number
+  appliedAt: string
+  usdToKrwRate: string | number | null
+}
+
 export interface ApplicationGroup {
   accountId: number
   brokerageId: number
@@ -78,6 +84,15 @@ export const stockBalanceApi = {
   },
   delete(balanceId: number) {
     return request<void>(`/stock-balances/${balanceId}`, { method: 'DELETE' })
+  },
+  refreshPrices(accountId: number) {
+    return request<PriceRefreshResult>('/stock-balances/prices/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ accountId }),
+    })
+  },
+  exchangeRate(accountId: number) {
+    return request<number | null>(`/stock-balances/exchange-rate?accountId=${accountId}`)
   },
   snapshots(accountId: number) {
     return request<SnapshotHeader[]>(`/stock-balances/snapshots?accountId=${accountId}`)

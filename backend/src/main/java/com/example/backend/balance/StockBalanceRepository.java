@@ -30,6 +30,12 @@ public class StockBalanceRepository {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM investment_account a JOIN brokerage_company b ON b.brokerage_id = a.brokerage_id WHERE a.account_id = :id AND a.use_yn AND b.use_yn)", Map.of("id", id), Boolean.class));
     }
 
+    public boolean accountExists(long id) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM investment_account WHERE account_id = :id)",
+                Map.of("id", id), Boolean.class));
+    }
+
     public boolean activeStock(long id) {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM stock_master WHERE stock_id = :id AND use_yn)", Map.of("id", id), Boolean.class));
     }
@@ -65,6 +71,32 @@ public class StockBalanceRepository {
 
     public int deleteBalance(long balanceId) {
         return jdbc.update("DELETE FROM stock_balance WHERE balance_id = :id", Map.of("id", balanceId));
+    }
+
+    public int updateCurrentPrice(long accountId, long balanceId, long stockId, BigDecimal price) {
+        return jdbc.update("""
+                UPDATE stock_balance
+                   SET current_price = :price,
+                       evaluation_amount = ROUND(balance_quantity * :price, 2),
+                       balance_updated_at = CURRENT_TIMESTAMP,
+                       updated_at = CURRENT_TIMESTAMP
+                 WHERE balance_id = :balanceId AND account_id = :accountId AND stock_id = :stockId
+                """, Map.of("price", price, "balanceId", balanceId, "accountId", accountId, "stockId", stockId));
+    }
+
+    public void saveExchangeRate(long accountId, BigDecimal rate) {
+        jdbc.update("""
+                INSERT INTO stock_balance_exchange_rate (account_id, usd_to_krw_rate)
+                VALUES (:accountId, :rate)
+                ON CONFLICT (account_id) DO UPDATE
+                  SET usd_to_krw_rate = EXCLUDED.usd_to_krw_rate, updated_at = CURRENT_TIMESTAMP
+                """, Map.of("accountId", accountId, "rate", rate));
+    }
+
+    public BigDecimal exchangeRate(long accountId) {
+        return jdbc.query("SELECT usd_to_krw_rate FROM stock_balance_exchange_rate WHERE account_id = :accountId",
+                Map.of("accountId", accountId), (rs, row) -> rs.getBigDecimal(1))
+                .stream().findFirst().orElse(null);
     }
 
     public void removeApplications(long accountId, long stockId) {

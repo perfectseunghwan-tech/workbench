@@ -20,3 +20,9 @@ CREATE TABLE IF NOT EXISTS stock_balance_trade_application (
 
 CREATE INDEX IF NOT EXISTS idx_stock_balance_trade_application_account
     ON stock_balance_trade_application(account_id, stock_id);
+
+CREATE TABLE IF NOT EXISTS stock_balance_exchange_rate (
+    account_id BIGINT PRIMARY KEY REFERENCES investment_account(account_id) ON DELETE CASCADE,
+    usd_to_krw_rate NUMERIC(20, 10) NOT NULL CHECK (usd_to_krw_rate > 0),
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

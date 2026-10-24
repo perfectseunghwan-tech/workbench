@@ -30,6 +30,7 @@ const marketOptions = [
   { value: 'KOSDAQ', label: '코스닥' },
   { value: 'NYSE', label: '뉴욕증권거래소' },
   { value: 'NASDAQ', label: '나스닥' },
+  { value: 'AMEX', label: '아멕스' },
 ]
 const form = ref<StockPayload>({
   stockCode: '',

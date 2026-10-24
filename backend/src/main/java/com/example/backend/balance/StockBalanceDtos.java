@@ -2,6 +2,7 @@ package com.example.backend.balance;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public final class StockBalanceDtos {
@@ -19,6 +20,9 @@ public final class StockBalanceDtos {
 
     public record SnapshotHeader(Long snapshotId, Long accountId, LocalDateTime snapshotAt) {}
     public record SnapshotResponse(SnapshotHeader header, List<BalanceResponse> details) {}
+
+    public record PriceRefreshRequest(Long accountId) {}
+    public record PriceRefreshResponse(int updatedCount, Instant appliedAt, BigDecimal usdToKrwRate) {}
 
     public record ApplicationRequest(List<Long> tradeIds) {}
     public record ApplicationGroup(Long accountId, Long brokerageId, String brokerageName,

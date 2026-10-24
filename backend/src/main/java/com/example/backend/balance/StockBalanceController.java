@@ -1,6 +1,7 @@
 package com.example.backend.balance;
 
 import static com.example.backend.balance.StockBalanceDtos.*;
+import java.math.BigDecimal;
 
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class StockBalanceController {
     private final StockBalanceService service;
+    private final StockBalancePriceRefreshService priceRefresh;
 
-    public StockBalanceController(StockBalanceService service) { this.service = service; }
+    public StockBalanceController(StockBalanceService service, StockBalancePriceRefreshService priceRefresh) {
+        this.service = service;
+        this.priceRefresh = priceRefresh;
+    }
 
     @GetMapping("/stock-balances")
     public List<BalanceResponse> find(@RequestParam(required = false) Long brokerageId,
@@ -35,6 +40,14 @@ public class StockBalanceController {
         service.delete(balanceId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/stock-balances/prices/refresh")
+    public PriceRefreshResponse refreshPrices(@RequestBody PriceRefreshRequest request) {
+        return priceRefresh.refresh(request);
+    }
+
+    @GetMapping("/stock-balances/exchange-rate")
+    public BigDecimal exchangeRate(@RequestParam long accountId) { return priceRefresh.savedExchangeRate(accountId); }
 
     @GetMapping("/stock-balances/snapshots")
     public List<SnapshotHeader> snapshots(@RequestParam long accountId) { return service.snapshots(accountId); }

@@ -8,3 +8,8 @@ build/
 .idea/ 
 .vscode/ 
 *.class 
+.tmpp
+# Custom Build Directories
+backend/build-verify/
+backend/.gradle-user/
+backend/.gradle-work-project/

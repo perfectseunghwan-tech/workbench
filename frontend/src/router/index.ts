@@ -21,6 +21,12 @@ const router = createRouter({
           meta: { title: '주식잔고' },
         },
         {
+          path: 'prices',
+          name: 'stock-prices',
+          component: () => import('../views/StockPriceView.vue'),
+          meta: { title: '시세 조회' },
+        },
+        {
           path: 'strategies',
           name: 'investment-strategy-list',
           component: () => import('../views/InvestmentStrategyListView.vue'),

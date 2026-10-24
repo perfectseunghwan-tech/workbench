@@ -754,3 +754,44 @@
   font-size: inherit;
   letter-spacing: inherit;
 }
+
+.app-surface-panel {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow);
+}
+.app-text-input {
+  min-height: 42px;
+  padding: 9px 12px;
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--app-radius);
+}
+.app-text-input:disabled {
+  background: var(--app-surface-muted);
+}
+.app-primary-button {
+  min-height: 42px;
+  padding: 9px 18px;
+  color: #fff;
+  background: var(--app-primary-600);
+  border: 1px solid var(--app-primary-600);
+  border-radius: var(--app-radius);
+  cursor: pointer;
+}
+.app-primary-button:hover:not(:disabled) {
+  background: var(--app-primary-700);
+}
+.app-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.app-error-message {
+  padding: 10px 12px;
+  color: var(--app-danger);
+  background: var(--app-danger-soft);
+  border: 1px solid var(--app-danger);
+  border-radius: var(--app-radius);
+}

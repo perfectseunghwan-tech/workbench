@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
@@ -31,7 +32,7 @@ public class OpenAiResponsesClient {
     private final int maxOutputTokens;
     private final String investmentInstructions;
 
-    public OpenAiResponsesClient(RestClient restClient, ObjectMapper objectMapper,
+    public OpenAiResponsesClient(@Qualifier("openAiRestClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.ai.chat.model}") String model,
             @Value("${app.ai.chat.reasoning-effort}") String reasoningEffort,
             @Value("${app.ai.chat.max-output-tokens}") int maxOutputTokens) throws IOException {

@@ -32,6 +32,7 @@ const navigation = [
   {
     label: '시스템',
     items: [
+      { label: '시세 조회', icon: 'pi pi-chart-line', to: '/prices' },
       { label: '서버 연결 확인', icon: 'pi pi-link', to: '/connection' },
       { label: 'AI 채팅', icon: 'pi pi-comments', to: '/ai-chat' },
     ],

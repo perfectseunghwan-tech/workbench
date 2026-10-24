@@ -46,6 +46,9 @@ const selectedSnapshot = ref<{
 const error = ref('')
 const notice = ref('')
 const busy = ref(false)
+const priceRefreshing = ref(false)
+const usdToKrwRate = ref<number | null>(null)
+const exchangeRateError = ref('')
 const editing = ref(false)
 const editingBalanceId = ref<number | null>(null)
 const applying = ref(false)
@@ -70,16 +73,33 @@ const filteredAccounts = computed(() =>
 const selectedAccount = computed(
   () => accounts.value.find((item) => item.accountId === accountId.value) ?? null,
 )
+const evaluationAmount = (balance: Balance) =>
+  balance.currentPrice === null
+    ? null
+    : Number(balance.balanceQuantity) * Number(balance.currentPrice)
 const totals = computed(() => {
-  const byCurrency = new Map<string, number>()
+  let purchaseAmount = 0
+  let evaluatedAmount = 0
+  let purchaseCount = 0
+  let evaluationCount = 0
+  let missingRate = false
   for (const balance of balances.value) {
-    if (balance.evaluationAmount !== null)
-      byCurrency.set(
-        balance.currencyCode,
-        (byCurrency.get(balance.currencyCode) ?? 0) + Number(balance.evaluationAmount),
-      )
+    const rate = balance.currencyCode === 'KRW' ? 1 : usdToKrwRate.value
+    if (rate === null || (balance.currencyCode !== 'KRW' && balance.currencyCode !== 'USD')) {
+      missingRate = true
+      continue
+    }
+    if (balance.purchaseAmount !== null) {
+      purchaseAmount += Number(balance.purchaseAmount) * rate
+      purchaseCount++
+    }
+    const amount = evaluationAmount(balance)
+    if (amount !== null) {
+      evaluatedAmount += amount * rate
+      evaluationCount++
+    }
   }
-  return [...byCurrency.entries()]
+  return { purchaseAmount, evaluatedAmount, purchaseCount, evaluationCount, missingRate }
 })
 const fmt = (value: number | string | null, digits = 2) =>
   value === null
@@ -100,6 +120,29 @@ async function loadBalances() {
   if (brokerageId.value) params.set('brokerageId', String(brokerageId.value))
   if (accountId.value) params.set('accountId', String(accountId.value))
   balances.value = await stockBalanceApi.list(params)
+}
+async function loadExchangeRate(selectedAccountId: number | '') {
+  if (!balances.value.some((balance) => balance.currencyCode === 'USD')) {
+    usdToKrwRate.value = null
+    exchangeRateError.value = ''
+    return
+  }
+  try {
+    if (!selectedAccountId) return
+    const result = await stockBalanceApi.exchangeRate(selectedAccountId)
+    if (accountId.value !== selectedAccountId) return
+    const rate = Number(result)
+    if (result === null || !Number.isFinite(rate) || rate <= 0)
+      throw new Error('저장된 환율이 없습니다. 현재가 반영을 실행해 주세요.')
+    usdToKrwRate.value = rate
+    exchangeRateError.value = ''
+  } catch (e) {
+    if (accountId.value === selectedAccountId) {
+      usdToKrwRate.value = null
+      exchangeRateError.value =
+        e instanceof Error ? e.message : '저장된 환율을 불러오지 못했습니다.'
+    }
+  }
 }
 async function loadPending() {
   if (!accountId.value) {
@@ -157,10 +200,48 @@ async function loadSnapshots() {
 }
 async function refresh() {
   clearError()
+  usdToKrwRate.value = null
+  exchangeRateError.value = ''
+  const selectedAccountId = accountId.value
   try {
     await Promise.all([loadBalances(), loadPending(), loadSnapshots()])
+    if (accountId.value === selectedAccountId) await loadExchangeRate(selectedAccountId)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '자료를 불러오지 못했습니다.'
+  }
+}
+async function refreshPrices() {
+  const selectedAccountId = accountId.value
+  if (!selectedAccountId || !balances.value.length || busy.value) return
+  clearError()
+  busy.value = true
+  priceRefreshing.value = true
+  let applied = false
+  try {
+    const result = await stockBalanceApi.refreshPrices(selectedAccountId)
+    applied = true
+    if (accountId.value !== selectedAccountId) return
+    const [updatedBalances, updatedSnapshots] = await Promise.all([
+      stockBalanceApi.list(new URLSearchParams({ accountId: String(selectedAccountId) })),
+      stockBalanceApi.snapshots(selectedAccountId),
+    ])
+    if (accountId.value !== selectedAccountId) return
+    balances.value = updatedBalances
+    usdToKrwRate.value = result.usdToKrwRate === null ? null : Number(result.usdToKrwRate)
+    exchangeRateError.value = ''
+    snapshots.value = updatedSnapshots
+    selectedSnapshot.value = null
+    notice.value = `${result.updatedCount}개 종목의 현재가를 반영했습니다.`
+  } catch (e) {
+    if (accountId.value === selectedAccountId)
+      error.value = applied
+        ? '현재가는 반영되었지만 잔고를 다시 불러오지 못했습니다. 화면을 새로고침해 주세요.'
+        : e instanceof Error
+          ? e.message
+          : '현재가를 반영하지 못했습니다.'
+  } finally {
+    busy.value = false
+    priceRefreshing.value = false
   }
 }
 function selectBrokerage(id: number) {
@@ -462,7 +543,16 @@ onMounted(async () => {
               <button
                 class="primary-button"
                 type="button"
-                :disabled="!accountId"
+                :disabled="!accountId || !balances.length || busy"
+                @click="refreshPrices"
+              >
+                <i :class="priceRefreshing ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"></i>
+                {{ priceRefreshing ? '현재가 반영 중' : '현재가 반영' }}
+              </button>
+              <button
+                class="primary-button"
+                type="button"
+                :disabled="!accountId || busy"
                 @click="openForm()"
               >
                 <i class="pi pi-plus"></i> 잔고 직접 입력
@@ -470,7 +560,7 @@ onMounted(async () => {
               <button
                 class="primary-button"
                 type="button"
-                :disabled="!accountId"
+                :disabled="!accountId || busy"
                 @click="openApplyDialog"
               >
                 <i class="pi pi-check-square"></i> 미반영 거래 반영 <b>{{ pendingTotal }}</b>
@@ -479,14 +569,39 @@ onMounted(async () => {
           </header>
           <div class="balance-content">
             <div class="balance-totals">
-              <span v-for="[currency, amount] in totals" :key="currency"
-                >평가금액 <strong>{{ fmt(amount) }} {{ currency }}</strong></span
-              >
+              <span>
+                총 매입금액
+                <strong
+                  >{{
+                    balances.length > 0 &&
+                    totals.purchaseCount === balances.length &&
+                    !totals.missingRate
+                      ? fmt(totals.purchaseAmount)
+                      : '—'
+                  }}
+                  KRW</strong
+                >
+              </span>
+              <span>
+                총 평가금액
+                <strong
+                  >{{
+                    balances.length > 0 &&
+                    totals.evaluationCount === balances.length &&
+                    !totals.missingRate
+                      ? fmt(totals.evaluatedAmount)
+                      : '—'
+                  }}
+                  KRW</strong
+                >
+              </span>
+              <span v-if="usdToKrwRate !== null">USD/KRW {{ fmt(usdToKrwRate, 6) }}</span>
             </div>
+            <p v-if="exchangeRateError" class="alert error" role="alert">{{ exchangeRateError }}</p>
             <DataTable
               :value="balances"
               dataKey="balanceId"
-              class="account-style-table"
+              class="account-style-table balance-table"
               scrollable
               :tableStyle="{ minWidth: '1050px' }"
               :emptyMessage="accountId ? '등록된 잔고가 없습니다.' : '계좌를 선택해 주세요.'"
@@ -500,16 +615,24 @@ onMounted(async () => {
                 ><template #body="{ data }">{{ fmt(data.balanceQuantity, 6) }}</template></Column
               >
               <Column header="매입금액"
-                ><template #body="{ data }">{{ fmt(data.purchaseAmount) }}</template></Column
+                ><template #body="{ data }"
+                  >{{ fmt(data.purchaseAmount) }} {{ data.currencyCode }}</template
+                ></Column
               >
               <Column header="평균매수가"
-                ><template #body="{ data }">{{ fmt(data.purchasePrice, 6) }}</template></Column
+                ><template #body="{ data }"
+                  >{{ fmt(data.purchasePrice, 6) }} {{ data.currencyCode }}</template
+                ></Column
               >
               <Column header="현재가"
-                ><template #body="{ data }">{{ fmt(data.currentPrice, 6) }}</template></Column
+                ><template #body="{ data }"
+                  >{{ fmt(data.currentPrice, 6) }} {{ data.currencyCode }}</template
+                ></Column
               >
               <Column header="평가금액"
-                ><template #body="{ data }">{{ fmt(data.evaluationAmount) }}</template></Column
+                ><template #body="{ data }"
+                  >{{ fmt(evaluationAmount(data)) }} {{ data.currencyCode }}</template
+                ></Column
               >
               <Column header="관리"
                 ><template #body="{ data }"
@@ -553,7 +676,7 @@ onMounted(async () => {
               <DataTable
                 v-if="selectedSnapshot"
                 :value="selectedSnapshot.details"
-                class="account-style-table"
+                class="account-style-table snapshot-table"
               >
                 <Column field="stockName" header="종목" />
                 <Column header="보유수량"
@@ -1057,6 +1180,17 @@ onMounted(async () => {
   color: var(--app-primary-800);
   background: var(--app-primary-50);
   border-color: var(--app-primary-200);
+}
+.snapshot-table :deep(th:nth-child(n + 2)),
+.snapshot-table :deep(td:nth-child(n + 2)) {
+  text-align: right !important;
+}
+.balance-table :deep(th:nth-child(n + 2):nth-child(-n + 6)),
+.balance-table :deep(td:nth-child(n + 2):nth-child(-n + 6)) {
+  text-align: right !important;
+}
+.balance-table :deep(th:nth-child(n + 2):nth-child(-n + 6) .p-datatable-column-header-content) {
+  justify-content: flex-end !important;
 }
 .panel-description {
   margin: 14px 16px 2px;
